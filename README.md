@@ -21,9 +21,25 @@ streamlit run app.py
 ```
 Opens at http://localhost:8501.
 
-## The three tabs
+## Optional phonetics setup
+The core app works without these packages. To enable automatic reference IPA,
+PanPhon distance, and Allosaurus phone recognition:
+
+```bash
+source .venv/bin/activate
+pip install -r requirements-phonetics.txt
+streamlit run app.py
+```
+
+Allosaurus and its model are large, so first installation/use may take several
+minutes. If it is unavailable, the Phonetics tab keeps a manual phone-entry
+fallback. Use speaker codes (`S01`, `S02`), never names. The tab does not save
+uploaded audio; reviewed analysis is stored under the Git-ignored `data/` folder.
+
+## The four tabs
 - **Clarify** — the core loop. Record/upload → see the point, plus raw-vs-clarified side by side → speak it back.
 - **Personalize** — teach it a speaker's recurring mis-hears (correction memory). This is your v1 personalization.
+- **Phonetics** — compare reference and estimated phones, review mismatches, calculate PER, and build anonymous speaker profiles.
 - **Measure WER** — upload a clip + paste what the speaker actually meant; get baseline vs. Understand word error rate. **This delta is your headline number.**
 
 ## Deploy a public URL (free)

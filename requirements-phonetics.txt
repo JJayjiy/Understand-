@@ -1,0 +1,5 @@
+# Optional: the core app still runs if these are absent.
+gruut>=2.2.3
+gruut-lang-en>=2.0.1
+panphon>=0.22
+allosaurus>=1.0.2
