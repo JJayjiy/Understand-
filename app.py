@@ -16,6 +16,8 @@ from pathlib import Path
 
 import streamlit as st
 
+from phonetics import align_phones, calculate_per
+
 try:
     from openai import OpenAI
 except ImportError:
@@ -126,8 +128,9 @@ with st.sidebar:
 st.title("🗣️ Understand — v0")
 st.caption("Hear it right → get the point. Hard-to-understand speech, made understandable.")
 
-tab_clarify, tab_personalize, tab_measure = st.tabs(["Clarify", "Personalize", "Measure WER"])
-
+tab_clarify, tab_personalize, tab_phonetics, tab_measure = st.tabs(
+    ["Clarify", "Personalize", "Phonetics", "Measure WER"]
+)
 
 # ---------- Tab: Clarify (the core loop) ----------
 with tab_clarify:
@@ -200,6 +203,42 @@ with tab_personalize:
     else:
         st.info("No corrections yet.")
 
+# ---------- Tab: Phonetics ----------
+with tab_phonetics:
+    st.subheader("Phonetic comparison")
+    st.caption(
+        "Compare reference phones with the phone recognizer's estimate."
+    )
+
+    speaker_code = st.text_input(
+        "Speaker code",
+        placeholder="S01",
+    )
+
+    expected_text = st.text_input(
+        "Reference IPA — separate each phone with a space",
+        placeholder="w ɔ t ɚ",
+    )
+
+    recognized_text = st.text_input(
+        "Recognized phones — separate each phone with a space",
+        placeholder="w ɔ ɚ",
+    )
+
+    if st.button("Compare phones"):
+        expected = expected_text.split()
+        recognized = recognized_text.split()
+
+        if not speaker_code:
+            st.error("Enter a speaker code such as S01.")
+        elif not expected or not recognized:
+            st.error("Enter both phone sequences.")
+        else:
+            alignment = align_phones(expected, recognized)
+            per = calculate_per(alignment)
+
+            st.metric("Phoneme Error Rate", f"{per:.1%}")
+            st.dataframe(alignment, use_container_width=True)
 
 # ---------- Tab: Measure WER (your headline number) ----------
 with tab_measure:
