@@ -22,3 +22,14 @@ checkpoints/
 *.safetensors
 .DS_Store
 .ipynb_checkpoints/
+
+# TORGO corpus — NEVER commit. Redistribution violates its terms, and the
+# maintainers' approval to publish adapter weights was explicitly conditioned
+# on not including any of this. 15GB, ~25k files.
+TORGO_datasets/
+*.tar.bz2
+*.tar.gz
+*.zip
+
+# Derived artifacts that can be regenerated from scripts/
+eval_results/

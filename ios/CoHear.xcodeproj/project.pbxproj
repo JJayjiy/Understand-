@@ -1,0 +1,426 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0A8F603CC39ADD11E6739083 /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = 9D908E33FCD97FD581EDA212 /* WhisperKit */; };
+		2AA72CAACCCBE57ED7A238B0 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9326486973A3EFBC276C775A /* Theme.swift */; };
+		4AD261D5E0E6F6BFAFEA2A16 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C734AF58F15549F16356E39A /* RootView.swift */; };
+		63C5B15FEB5A808123E432B3 /* ModelSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72A7D41078F93D7F7A1F07E8 /* ModelSetupView.swift */; };
+		8F90E58170A0336DA08DC11C /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 63D4D3BCE09A76C4A60D53E0 /* PrivacyInfo.xcprivacy */; };
+		A227A9BF268AC3917A44D7A9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 513A68EDA47B048BF619F903 /* Assets.xcassets */; };
+		ABF4216D59E11C45F408B413 /* Clarifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49A9F3019B4302098AD1C913 /* Clarifier.swift */; };
+		AC0AC4E2FA3FBB0E69622712 /* Transcriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = D79066757B7E6FF481F6FD3B /* Transcriber.swift */; };
+		D695046DADA2293FCE01B492 /* ShowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BE7E282B3E9C9DD83A0AADB /* ShowView.swift */; };
+		D95A25B8DD20E2DC9402EFB3 /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DC924DE9D699397DB4430D8 /* SessionStore.swift */; };
+		E87C5ED3CB08DB969C9E970E /* Utterance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CB0B7497124E4B4FDAD1FBA /* Utterance.swift */; };
+		F0004BDD3DE202412C9878C7 /* EditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46A2EBF6FE9711A467945686 /* EditView.swift */; };
+		F04D4EF5999B863AE35EF999 /* AudioRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9464F84013CA08DC486A25E5 /* AudioRecorder.swift */; };
+		F1EA348FDE2415B2B4E02958 /* CoHearApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6F2C49B9E9A8AAD4D4AD5AD /* CoHearApp.swift */; };
+		F5509336601C4E648FC9CA8D /* Speaker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8D4481A779D63CD43CDE290 /* Speaker.swift */; };
+		FFEB59AD00037B3958FDFE79 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2056466C8A3EFEF915F803A /* SettingsView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		2BE7E282B3E9C9DD83A0AADB /* ShowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShowView.swift; sourceTree = "<group>"; };
+		2DC924DE9D699397DB4430D8 /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
+		46A2EBF6FE9711A467945686 /* EditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditView.swift; sourceTree = "<group>"; };
+		49A9F3019B4302098AD1C913 /* Clarifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clarifier.swift; sourceTree = "<group>"; };
+		4CB0B7497124E4B4FDAD1FBA /* Utterance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utterance.swift; sourceTree = "<group>"; };
+		513A68EDA47B048BF619F903 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		63D4D3BCE09A76C4A60D53E0 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		722A7A4AD3707166C078FD10 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		72A7D41078F93D7F7A1F07E8 /* ModelSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelSetupView.swift; sourceTree = "<group>"; };
+		9326486973A3EFBC276C775A /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		9464F84013CA08DC486A25E5 /* AudioRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRecorder.swift; sourceTree = "<group>"; };
+		B8D4481A779D63CD43CDE290 /* Speaker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Speaker.swift; sourceTree = "<group>"; };
+		C734AF58F15549F16356E39A /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		D2056466C8A3EFEF915F803A /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		D79066757B7E6FF481F6FD3B /* Transcriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Transcriber.swift; sourceTree = "<group>"; };
+		E324415AD31FC5A4E43382A2 /* CoHear.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = CoHear.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F6F2C49B9E9A8AAD4D4AD5AD /* CoHearApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoHearApp.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		6CCE508A8A9B887C315E531F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0A8F603CC39ADD11E6739083 /* WhisperKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		1453A67057537CB3A2910FB3 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				9464F84013CA08DC486A25E5 /* AudioRecorder.swift */,
+				49A9F3019B4302098AD1C913 /* Clarifier.swift */,
+				B8D4481A779D63CD43CDE290 /* Speaker.swift */,
+				D79066757B7E6FF481F6FD3B /* Transcriber.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		237EC7160F54FD0A541C6B7C /* CoHear */ = {
+			isa = PBXGroup;
+			children = (
+				513A68EDA47B048BF619F903 /* Assets.xcassets */,
+				F6F2C49B9E9A8AAD4D4AD5AD /* CoHearApp.swift */,
+				722A7A4AD3707166C078FD10 /* Info.plist */,
+				2CD35349BB5EC742D578B9CC /* Models */,
+				2E67AD8AE9578332FEC131A4 /* Resources */,
+				1453A67057537CB3A2910FB3 /* Services */,
+				764D41BA5DF8C24D4A16B43B /* Views */,
+			);
+			path = CoHear;
+			sourceTree = "<group>";
+		};
+		2CD35349BB5EC742D578B9CC /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				2DC924DE9D699397DB4430D8 /* SessionStore.swift */,
+				4CB0B7497124E4B4FDAD1FBA /* Utterance.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		2E67AD8AE9578332FEC131A4 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				63D4D3BCE09A76C4A60D53E0 /* PrivacyInfo.xcprivacy */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		764D41BA5DF8C24D4A16B43B /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				46A2EBF6FE9711A467945686 /* EditView.swift */,
+				72A7D41078F93D7F7A1F07E8 /* ModelSetupView.swift */,
+				C734AF58F15549F16356E39A /* RootView.swift */,
+				D2056466C8A3EFEF915F803A /* SettingsView.swift */,
+				2BE7E282B3E9C9DD83A0AADB /* ShowView.swift */,
+				9326486973A3EFBC276C775A /* Theme.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		A20E977C0118F7FB941F7595 = {
+			isa = PBXGroup;
+			children = (
+				237EC7160F54FD0A541C6B7C /* CoHear */,
+				EEFC48A32E600E1586326F4C /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		EEFC48A32E600E1586326F4C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				E324415AD31FC5A4E43382A2 /* CoHear.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		E5868B3660FE75DFBCADB336 /* CoHear */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A9AA262B6628C4683F29409A /* Build configuration list for PBXNativeTarget "CoHear" */;
+			buildPhases = (
+				272D9DD7152CDE13E1E42837 /* Sources */,
+				E8AD082643BD116069AF81AB /* Resources */,
+				6CCE508A8A9B887C315E531F /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CoHear;
+			packageProductDependencies = (
+				9D908E33FCD97FD581EDA212 /* WhisperKit */,
+			);
+			productName = CoHear;
+			productReference = E324415AD31FC5A4E43382A2 /* CoHear.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		7F1F6DAEC7090F33D91C7F7B /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					E5868B3660FE75DFBCADB336 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 05D0BA9D4EB0544F5CAB7D71 /* Build configuration list for PBXProject "CoHear" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = A20E977C0118F7FB941F7595;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				BD1FCEE54BCD80EDB51AE595 /* XCRemoteSwiftPackageReference "argmax-oss-swift" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = EEFC48A32E600E1586326F4C /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				E5868B3660FE75DFBCADB336 /* CoHear */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		E8AD082643BD116069AF81AB /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A227A9BF268AC3917A44D7A9 /* Assets.xcassets in Resources */,
+				8F90E58170A0336DA08DC11C /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		272D9DD7152CDE13E1E42837 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F04D4EF5999B863AE35EF999 /* AudioRecorder.swift in Sources */,
+				ABF4216D59E11C45F408B413 /* Clarifier.swift in Sources */,
+				F1EA348FDE2415B2B4E02958 /* CoHearApp.swift in Sources */,
+				F0004BDD3DE202412C9878C7 /* EditView.swift in Sources */,
+				63C5B15FEB5A808123E432B3 /* ModelSetupView.swift in Sources */,
+				4AD261D5E0E6F6BFAFEA2A16 /* RootView.swift in Sources */,
+				D95A25B8DD20E2DC9402EFB3 /* SessionStore.swift in Sources */,
+				FFEB59AD00037B3958FDFE79 /* SettingsView.swift in Sources */,
+				D695046DADA2293FCE01B492 /* ShowView.swift in Sources */,
+				F5509336601C4E648FC9CA8D /* Speaker.swift in Sources */,
+				2AA72CAACCCBE57ED7A238B0 /* Theme.swift in Sources */,
+				AC0AC4E2FA3FBB0E69622712 /* Transcriber.swift in Sources */,
+				E87C5ED3CB08DB969C9E970E /* Utterance.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		6561205C521DC222CE8D9DFD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				INFOPLIST_FILE = CoHear/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.jingjinglei.CoHear;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.10;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		8162A231F9DB0037D3F2E183 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				INFOPLIST_FILE = CoHear/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.jingjinglei.CoHear;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.10;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		93B071329102484A3FC77909 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		96FDC327FA3FEC7639EF06D2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		05D0BA9D4EB0544F5CAB7D71 /* Build configuration list for PBXProject "CoHear" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				93B071329102484A3FC77909 /* Debug */,
+				96FDC327FA3FEC7639EF06D2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A9AA262B6628C4683F29409A /* Build configuration list for PBXNativeTarget "CoHear" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8162A231F9DB0037D3F2E183 /* Debug */,
+				6561205C521DC222CE8D9DFD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		BD1FCEE54BCD80EDB51AE595 /* XCRemoteSwiftPackageReference "argmax-oss-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/argmaxinc/argmax-oss-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.9.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		9D908E33FCD97FD581EDA212 /* WhisperKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BD1FCEE54BCD80EDB51AE595 /* XCRemoteSwiftPackageReference "argmax-oss-swift" */;
+			productName = WhisperKit;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 7F1F6DAEC7090F33D91C7F7B /* Project object */;
+}

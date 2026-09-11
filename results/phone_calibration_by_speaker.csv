@@ -1,0 +1,7 @@
+speaker,group,clips,ref_phones,phone_errors,per
+M04,dysarthric,198,710,152,0.2141
+M05,dysarthric,287,1029,96,0.0933
+MC01,control,316,1104,24,0.0217
+MC02,control,283,1020,60,0.0588
+MC03,control,340,1196,28,0.0234
+MC04,control,355,1251,18,0.0144

@@ -1,0 +1,4 @@
+condition,run_tag,clips,sentences,sentence_wer,single_words,words_correct,word_accuracy
+Stock Whisper-small,m04-stock,59,22,0.8438,37,3,0.0811
++ personal adaptation (M04),m04-lora,59,22,0.5081,37,20,0.5405
+IMPROVEMENT,,,,-0.3358 absolute / -39.8% relative,,+17,6.7x

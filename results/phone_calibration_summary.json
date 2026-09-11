@@ -1,0 +1,8 @@
+{
+  "prompts_compared": 248,
+  "control_reference_phones": 4571,
+  "dysarthric_reference_phones": 1739,
+  "control_phone_error_rate": 0.0217,
+  "dysarthric_phone_error_rate": 0.0794,
+  "noise_floor_share": 0.2729
+}

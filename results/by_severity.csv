@@ -1,0 +1,5 @@
+severity,speakers,clips,sentence_wer,word_accuracy
+none,"FC01,FC02,FC03,MC01,MC02,MC03,MC04",894,0.0292,0.7128
+mild,"F03,F04,M03",207,0.1267,0.622
+moderate,M05,70,0.2954,0.4211
+severe,"F01,M01,M02,M04",191,0.7776,0.1288
