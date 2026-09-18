@@ -66,9 +66,14 @@ struct RootView: View {
                         emptyState
                     }
                     ForEach(session.utterances) { u in
-                        UtteranceRow(utterance: u, scale: session.textScale) {
-                            editing = u
-                        }
+                        UtteranceRow(
+                            utterance: u,
+                            scale: session.textScale,
+                            filtering: session.filterOtherVoices,
+                            onEdit: { editing = u },
+                            onClaim: { session.setOwnVoice(u.id, isOwn: true) },
+                            onDisown: { session.setOwnVoice(u.id, isOwn: false) }
+                        )
                         .id(u.id)
                     }
                     if session.isTranscribing {
@@ -134,13 +139,47 @@ struct RootView: View {
             }
             .accessibilityHint(session.isListening ? "Stops listening" : "Starts listening. Speak, then pause.")
 
-            if !session.statusMessage.isEmpty {
-                Label(session.statusMessage, systemImage: session.isListening ? "waveform" : "info.circle")
+            if session.isListening {
+                LevelMeter(level: session.level, hearing: session.hearingSpeech)
+            } else if !session.statusMessage.isEmpty {
+                Label(session.statusMessage, systemImage: "info.circle")
                     .font(Theme.label())
-                    .foregroundStyle(session.isListening ? .red : .secondary)
-                    .symbolEffect(.variableColor.iterative, isActive: session.isListening)
+                    .foregroundStyle(.secondary)
             }
         }
+    }
+}
+
+// MARK: - Level meter
+
+/// Shows the mic is live and whether it's hearing you.
+///
+/// This is not decoration. Without it, "the app didn't hear me" and "the app is
+/// broken" look identical, and the person has no way to tell whether to speak
+/// louder, move closer, or give up.
+struct LevelMeter: View {
+    let level: Float
+    let hearing: Bool
+
+    var body: some View {
+        VStack(spacing: 8) {
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(.secondary.opacity(0.20))
+                    Capsule()
+                        .fill(hearing ? Color.green : Color.secondary)
+                        .frame(width: max(6, geo.size.width * CGFloat(level)))
+                        .animation(.linear(duration: 0.05), value: level)
+                }
+            }
+            .frame(height: 14)
+
+            Text(hearing ? "Hearing you" : "Listening — speak up a little")
+                .font(Theme.label())
+                .foregroundStyle(hearing ? .green : .secondary)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(hearing ? "Hearing you" : "Listening, no speech detected")
     }
 }
 
@@ -149,29 +188,79 @@ struct RootView: View {
 struct UtteranceRow: View {
     let utterance: Utterance
     let scale: Double
+    let filtering: Bool
     let onEdit: () -> Void
+    let onClaim: () -> Void
+    let onDisown: () -> Void
+
+    /// Dimmed and excluded: only when clearly another voice.
+    private var dimmed: Bool { filtering && utterance.voice == .other }
+    /// Tagged but still shown: the classifier wasn't sure.
+    private var unsure: Bool { filtering && utterance.voice == .uncertain }
 
     var body: some View {
-        Button(action: onEdit) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(utterance.text)
-                    .font(Theme.body(scale))
-                    .foregroundStyle(.primary)
-                    .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
-                if let point = utterance.point, !point.isEmpty, utterance.edited == nil {
-                    Text(point)
+        VStack(alignment: .leading, spacing: 10) {
+            Button(action: onEdit) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(utterance.text)
+                        .font(Theme.body(scale))
+                        .foregroundStyle(dimmed ? .secondary : .primary)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let point = utterance.point, !point.isEmpty,
+                       utterance.edited == nil, !dimmed {
+                        Text(point)
+                            .font(Theme.label())
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .frame(maxWidth: .infinity, minHeight: Theme.minTarget, alignment: .leading)
+            }
+            .buttonStyle(.plain)
+
+            // One tap to correct. Full-width, not an icon — this is the most
+            // likely thing to be wrong, and fixing it must not require aim.
+            //
+            // Dimmed  → "This was me" (prominent; the speaker's words are hidden)
+            // Unsure  → both options, quietly
+            // Own     → "Someone else" only if the speaker hasn't already ruled
+            if dimmed || unsure {
+                Button(action: onClaim) {
+                    Label("This was me", systemImage: "person.fill.checkmark")
+                        .font(Theme.label())
+                        .frame(maxWidth: .infinity, minHeight: Theme.minTarget)
+                        .background(.tint.opacity(dimmed ? 0.18 : 0.08),
+                                    in: RoundedRectangle(cornerRadius: 14))
+                }
+                .buttonStyle(.plain)
+            }
+            if !dimmed, filtering, !utterance.voiceConfirmedByUser {
+                Button(action: onDisown) {
+                    Label("Someone else said this", systemImage: "person.2")
                         .font(Theme.label())
                         .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, minHeight: Theme.minTarget)
                 }
+                .buttonStyle(.plain)
             }
-            .frame(maxWidth: .infinity, minHeight: Theme.minTarget, alignment: .leading)
-            .padding(14)
-            .background(.secondary.opacity(0.10), in: RoundedRectangle(cornerRadius: 16))
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(utterance.text)
-        .accessibilityHint("Tap to edit")
+        .padding(14)
+        .background(
+            (dimmed ? Color.secondary.opacity(0.05) : Color.secondary.opacity(0.10)),
+            in: RoundedRectangle(cornerRadius: 16)
+        )
+        .overlay(alignment: .topTrailing) {
+            if dimmed || unsure {
+                Text(dimmed ? "not you" : "not sure")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 10).padding(.vertical, 4)
+                    .background(.secondary.opacity(0.15), in: Capsule())
+                    .padding(10)
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(dimmed ? "Someone else: \(utterance.text)" : utterance.text)
     }
 }

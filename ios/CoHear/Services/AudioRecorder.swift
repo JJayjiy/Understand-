@@ -17,13 +17,20 @@ final class AudioRecorder {
     /// Called on a background thread with 16 kHz mono samples of one utterance.
     var onSegment: (([Float]) -> Void)?
 
+    /// Called continuously with (rms level 0...1, currently hearing speech).
+    /// Drives the on-screen meter so the user can see it's working — and so a
+    /// silent failure is visible instead of invisible.
+    var onLevel: ((Float, Bool) -> Void)?
+
     // Tunables. Units are seconds unless noted.
     private let targetRate: Double = 16_000
     private let silenceToEnd: Double = 0.9        // pause length that ends an utterance
-    private let minSpeech: Double = 0.4           // shorter than this is a click, not a word
+    private let minSpeech: Double = 0.3           // shorter than this is a click, not a word
     private let maxSegment: Double = 28.0         // hard cap; Whisper's window is 30s
     private let preRoll: Double = 0.3             // audio kept from before speech was detected
-    private let speechFactor: Float = 3.0         // speech = this many × the noise floor
+    private let speechFactor: Float = 2.0         // speech = this many × the noise floor
+    private let absoluteFloor: Float = 0.004      // below this, it's never speech
+    private let maxNoiseFloor: Float = 0.02       // stop the floor chasing the speaker up
 
     private let engine = AVAudioEngine()
     private var converter: AVAudioConverter?
@@ -49,11 +56,13 @@ final class AudioRecorder {
 
         let session = AVAudioSession.sharedInstance()
         try session.setCategory(.playAndRecord, mode: .measurement,
-                                options: [.defaultToSpeaker, .allowBluetooth])
+                                options: [.defaultToSpeaker, .allowBluetoothHFP])
         try session.setActive(true)
 
         let input = engine.inputNode
-        let inFormat = input.outputFormat(forBus: 0)
+        let inFormat = input.inputFormat(forBus: 0)
+        print("[CoHear] mic format: \(inFormat.sampleRate) Hz, \(inFormat.channelCount) ch")
+        guard inFormat.sampleRate > 0 else { throw RecorderError.formatUnavailable }
         guard let outFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32,
                                             sampleRate: targetRate,
                                             channels: 1, interleaved: false),
@@ -115,12 +124,19 @@ final class AudioRecorder {
         let dur = Double(samples.count) / targetRate
         let rms = sqrt(samples.reduce(0) { $0 + $1 * $1 } / Float(samples.count))
 
-        // Track the noise floor slowly while not speaking so a quiet room and a
+        // Track the noise floor slowly while not speaking, so a quiet room and a
         // loud room both work without the user touching anything.
+        //
+        // Clamped at maxNoiseFloor for a specific reason: if someone taps Listen
+        // and starts talking immediately, an unclamped floor chases their voice
+        // upward and then nothing ever reads as speech. That failure is silent
+        // and total — the app just never transcribes anything.
         if !inSpeech {
-            noiseFloor = 0.95 * noiseFloor + 0.05 * max(rms, 0.001)
+            noiseFloor = min(0.95 * noiseFloor + 0.05 * max(rms, 0.001), maxNoiseFloor)
         }
-        let isSpeech = rms > noiseFloor * speechFactor
+        let isSpeech = rms > max(noiseFloor * speechFactor, absoluteFloor)
+
+        onLevel?(rms, isSpeech)
 
         // Keep a short pre-roll so the first consonant isn't clipped.
         ring.append(contentsOf: samples)
@@ -147,6 +163,8 @@ final class AudioRecorder {
     private func emit() {
         let segment = current
         current = []
+        print("[CoHear] segment: \(String(format: "%.2f", Double(segment.count) / targetRate))s, "
+              + "\(segment.count) samples, noiseFloor \(String(format: "%.4f", noiseFloor))")
         onSegment?(segment)
     }
 

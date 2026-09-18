@@ -14,6 +14,8 @@ struct ShowView: View {
             Color(.systemBackground).ignoresSafeArea()
 
             ScrollView {
+                // fullText already excludes lines attributed to other voices —
+                // what gets turned around and shown is the speaker's words only.
                 Text(session.fullText)
                     .font(Theme.show(session.textScale))
                     .multilineTextAlignment(.leading)

@@ -4,6 +4,13 @@ struct SettingsView: View {
     @EnvironmentObject var session: SessionStore
     @Environment(\.dismiss) private var dismiss
     @State private var confirmingClear = false
+    @State private var modelName = "Loading…"
+
+    private var modelNote: String {
+        modelName.hasPrefix("CoHear")
+            ? "Adapted on speech from adults with cerebral palsy and ALS. Word error on the most severely affected test speaker: 34.6%, down from 84.4%."
+            : "The general-purpose model. The CoHear model couldn't be loaded — check your connection and reopen the app."
+    }
 
     var body: some View {
         NavigationStack {
@@ -39,6 +46,23 @@ struct SettingsView: View {
                     Text("Clarify")
                 }
 
+                Section {
+                    Toggle(isOn: $session.filterOtherVoices) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Only my voice").font(Theme.label())
+                            Text("Dims lines that sound like someone else, and leaves them out of Show and Speak. Nothing is ever deleted — tap any line to correct it.")
+                                .font(.subheadline).foregroundStyle(.secondary)
+                        }
+                    }
+                    .frame(minHeight: Theme.minTarget)
+
+                    Text("This is a guess based on pitch and voice quality. It works best when the other person's voice is clearly different from yours, and it will sometimes be wrong.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                } header: {
+                    Text("Other voices")
+                }
+
                 Section("This session") {
                     Button(role: .destructive) { confirmingClear = true } label: {
                         Label("Clear everything said", systemImage: "trash")
@@ -60,6 +84,17 @@ struct SettingsView: View {
                             .foregroundStyle(.secondary)
                     }
                     .padding(.vertical, 6)
+                }
+
+                Section("Speech model") {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(modelName).font(Theme.label())
+                        Text(modelNote)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 4)
+                    .task { modelName = await session.transcriber.loadedName }
                 }
 
                 Section("About") {

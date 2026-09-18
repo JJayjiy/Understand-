@@ -33,3 +33,12 @@ TORGO_datasets/
 
 # Derived artifacts that can be regenerated from scripts/
 eval_results/
+
+# whisperkittools venv — created by scripts/convert_whisperkit.sh, several GB
+.venv-wkt/
+
+# Xcode per-user state and build products
+ios/**/xcuserdata/
+ios/**/project.xcworkspace/xcuserdata/
+ios/**/DerivedData/
+*.xcuserstate

@@ -11,6 +11,7 @@
 		2AA72CAACCCBE57ED7A238B0 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9326486973A3EFBC276C775A /* Theme.swift */; };
 		4AD261D5E0E6F6BFAFEA2A16 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C734AF58F15549F16356E39A /* RootView.swift */; };
 		63C5B15FEB5A808123E432B3 /* ModelSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72A7D41078F93D7F7A1F07E8 /* ModelSetupView.swift */; };
+		74857AF3EC8F07D6ED8C9A77 /* VoiceProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ABC8BB8E57B5815F6A3EEBA /* VoiceProfile.swift */; };
 		8F90E58170A0336DA08DC11C /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 63D4D3BCE09A76C4A60D53E0 /* PrivacyInfo.xcprivacy */; };
 		A227A9BF268AC3917A44D7A9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 513A68EDA47B048BF619F903 /* Assets.xcassets */; };
 		ABF4216D59E11C45F408B413 /* Clarifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49A9F3019B4302098AD1C913 /* Clarifier.swift */; };
@@ -26,6 +27,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		1ABC8BB8E57B5815F6A3EEBA /* VoiceProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceProfile.swift; sourceTree = "<group>"; };
 		2BE7E282B3E9C9DD83A0AADB /* ShowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShowView.swift; sourceTree = "<group>"; };
 		2DC924DE9D699397DB4430D8 /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
 		46A2EBF6FE9711A467945686 /* EditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditView.swift; sourceTree = "<group>"; };
@@ -64,6 +66,7 @@
 				49A9F3019B4302098AD1C913 /* Clarifier.swift */,
 				B8D4481A779D63CD43CDE290 /* Speaker.swift */,
 				D79066757B7E6FF481F6FD3B /* Transcriber.swift */,
+				1ABC8BB8E57B5815F6A3EEBA /* VoiceProfile.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -161,6 +164,7 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					E5868B3660FE75DFBCADB336 = {
+						DevelopmentTeam = B727X6U62V;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -217,6 +221,7 @@
 				2AA72CAACCCBE57ED7A238B0 /* Theme.swift in Sources */,
 				AC0AC4E2FA3FBB0E69622712 /* Transcriber.swift in Sources */,
 				E87C5ED3CB08DB969C9E970E /* Utterance.swift in Sources */,
+				74857AF3EC8F07D6ED8C9A77 /* VoiceProfile.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -229,13 +234,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = B727X6U62V;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				INFOPLIST_FILE = CoHear/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.jingjinglei.CoHear;
+				PRODUCT_BUNDLE_IDENTIFIER = com.leifamily.cohear.CoHear;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.10;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -248,13 +254,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = B727X6U62V;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				INFOPLIST_FILE = CoHear/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.jingjinglei.CoHear;
+				PRODUCT_BUNDLE_IDENTIFIER = com.leifamily.cohear.CoHear;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.10;
 				TARGETED_DEVICE_FAMILY = 1;

@@ -26,29 +26,51 @@ actor Transcriber {
         static let stock = ModelSpec(variant: "small.en", repo: nil)
     }
 
-    /// Flip this to `.cohear` once the converted model is on Hugging Face.
-    static let spec: ModelSpec = .stock
+    /// Models to try, in order. The fine-tuned CoHear model first; stock as a
+    /// fallback so the app still works if the CoHear repo is unreachable or the
+    /// conversion hasn't been pushed yet. Which one actually loaded is exposed
+    /// via `loadedSpec` and shown in Settings, so nobody mistakes stock results
+    /// for the research model.
+    static let candidates: [ModelSpec] = [.cohear, .stock]
 
     private var pipe: WhisperKit?
+    private(set) var loadedSpec: ModelSpec?
 
     var isReady: Bool { pipe != nil }
+
+    /// Human-readable name of whichever model is running.
+    var loadedName: String {
+        guard let s = loadedSpec else { return "not loaded" }
+        return s.repo == nil ? "Stock Whisper (small.en)" : "CoHear (adapted for dysarthria)"
+    }
 
     func load(progress: @escaping (Double) -> Void) async throws {
         guard pipe == nil else { return }
 
-        // Two steps so the download shows real progress. A 500MB model with a
-        // blank screen is exactly the first-launch experience that loses people
-        // (and App Store reviewers). Cached after the first time.
-        let repo = Self.spec.repo ?? "argmaxinc/whisperkit-coreml"
-        let folder = try await WhisperKit.download(
-            variant: Self.spec.variant,
-            from: repo,
-            progressCallback: { p in progress(p.fractionCompleted) }
-        )
-
-        let config = WhisperKitConfig(modelFolder: folder.path, verbose: false, load: true)
-        pipe = try await WhisperKit(config)
-        progress(1.0)
+        var lastError: Error?
+        for spec in Self.candidates {
+            do {
+                // Two steps so the download shows real progress. A 500MB model
+                // with a blank screen is exactly the first-launch experience that
+                // loses people (and App Store reviewers). Cached after the first time.
+                let repo = spec.repo ?? "argmaxinc/whisperkit-coreml"
+                let folder = try await WhisperKit.download(
+                    variant: spec.variant,
+                    from: repo,
+                    progressCallback: { p in progress(p.fractionCompleted) }
+                )
+                let config = WhisperKitConfig(modelFolder: folder.path, verbose: false, load: true)
+                pipe = try await WhisperKit(config)
+                loadedSpec = spec
+                print("[CoHear] loaded model: \(spec.variant) from \(repo)")
+                progress(1.0)
+                return
+            } catch {
+                print("[CoHear] could not load \(spec.variant): \(error.localizedDescription) — trying next")
+                lastError = error
+            }
+        }
+        throw lastError ?? TranscriberError.notLoaded
     }
 
     /// Transcribe one utterance of 16 kHz mono samples.

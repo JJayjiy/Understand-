@@ -46,23 +46,56 @@ else
   [ -f .venv-wkt/bin/activate ] && source .venv-wkt/bin/activate
 fi
 
-echo "== 3/3  Converting to Core ML and publishing to $DST_REPO"
-hf repo create "$DST_REPO" --type model -y 2>/dev/null || true
+echo "== 3/4  Converting to Core ML"
 mkdir -p "$OUT_DIR"
-MODEL_REPO_ID="$DST_REPO" whisperkit-generate-model \
-  --model-version "$SRC_REPO" \
-  --output-dir "$OUT_DIR"
+VARIANT="${SRC_REPO//\//_}"                 # JJaysz/x -> JJaysz_x, how whisperkittools names it
+# Not setting MODEL_REPO_ID: we upload ourselves in step 4, so a flaky push
+# inside the tool can't leave the repo half-populated. The tool also runs a
+# validation test after converting that needs network for a reference file;
+# if that test fails it prints FAILED but still exits 0, so we check the
+# output ourselves rather than trusting the exit code.
+whisperkit-generate-model --model-version "$SRC_REPO" --output-dir "$OUT_DIR" || true
+
+MODEL_DIR="$OUT_DIR/$VARIANT"
+for part in AudioEncoder.mlmodelc TextDecoder.mlmodelc MelSpectrogram.mlmodelc; do
+  [ -d "$MODEL_DIR/$part" ] || { echo "!! $part missing from $MODEL_DIR — conversion failed."; exit 1; }
+done
+echo "   all three Core ML models present ($(du -sh "$MODEL_DIR" | cut -f1))"
+echo "   (if you saw 'FAILED (errors=1)' above with a network error, that was the"
+echo "    post-conversion validation test, not the conversion — safe to continue)"
+
+echo "== 4/4  Uploading to $DST_REPO"
+hf repo create "$DST_REPO" --type model -y 2>/dev/null || true
+cat > "$MODEL_DIR/README.md" <<'README'
+---
+license: apache-2.0
+base_model: openai/whisper-small
+tags: [whisperkit, coreml, automatic-speech-recognition, dysarthria, accessibility]
+---
+
+# CoHear — Whisper-small adapted for dysarthric speech (Core ML / WhisperKit)
+
+Core ML export of [JJaysz/cohear-whisper-small-dysarthric](https://huggingface.co/JJaysz/cohear-whisper-small-dysarthric)
+with the LoRA adapter merged into the base weights, for on-device use via WhisperKit.
+Same weights, different packaging. See the source model card for results and limitations.
+
+**Research artifact, not a clinically validated system.** Non-commercial use.
+
+This model was fine-tuned using the TORGO Database of Acoustic and Articulatory Speech from
+Speakers with Dysarthria. TORGO data are not included in this repository and are subject to
+their original terms of use. Users wishing to access TORGO should obtain it separately from the
+[official source](http://www.cs.toronto.edu/~complingweb/data/TORGO/torgo.html).
+Please cite Rudzicz, Namasivayam & Wolff (2012) when using TORGO.
+
+Release of these weights, including this merged export, was approved in advance by the TORGO maintainers.
+README
+hf upload "$DST_REPO" "$MODEL_DIR" "$VARIANT" --repo-type model
 
 cat <<EOF
 
-Done. The app can now load it with:
+Done. Verify at: https://huggingface.co/$DST_REPO/tree/main/$VARIANT
+You should see AudioEncoder.mlmodelc, TextDecoder.mlmodelc, MelSpectrogram.mlmodelc.
 
-  WhisperKit.download(variant: "JJaysz_cohear-whisper-small-merged",
-                      from:    "JJaysz/cohear-whisperkit")
-
-Set  Transcriber.spec = .cohear  in ios/CoHear/Services/Transcriber.swift
-
-Add this to the README of $DST_REPO (same TORGO wording Frank required):
-  This model was fine-tuned using the TORGO Database ... TORGO data are not
-  included ... Please cite Rudzicz, Namasivayam & Wolff (2012). Non-commercial.
+The app already tries this model first (Transcriber.candidates). Delete CoHear
+from your phone, reinstall, and check Settings -> Speech model says "CoHear".
 EOF

@@ -54,7 +54,7 @@ xcodebuild -project CoHear.xcodeproj -scheme CoHear \
   -destination 'id=<DEVICE_ID>' -configuration Debug build
 xcrun devicectl device install app --device <DEVICE_ID> \
   ~/Library/Developer/Xcode/DerivedData/CoHear-*/Build/Products/Debug-iphoneos/CoHear.app
-xcrun devicectl device process launch --device <DEVICE_ID> com.jingjinglei.CoHear
+xcrun devicectl device process launch --device <DEVICE_ID> com.leifamily.cohear.CoHear
 ```
 
 ## What to test after it runs
