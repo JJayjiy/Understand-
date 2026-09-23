@@ -128,3 +128,9 @@ struct SettingsView: View {
         }
     }
 }
+
+#if DEBUG
+#Preview {
+    SettingsView().environmentObject(SessionStore.preview())
+}
+#endif

@@ -14,9 +14,13 @@ struct ModelSetupView: View {
         VStack(spacing: 28) {
             Spacer()
 
-            Image(systemName: "waveform.circle.fill")
-                .font(.system(size: 88))
-                .foregroundStyle(.tint)
+            ZStack {
+                Circle().fill(Theme.brand).frame(width: 120, height: 120)
+                    .shadow(color: Theme.blue.opacity(0.3), radius: 20, y: 8)
+                Image(systemName: "waveform")
+                    .font(.system(size: 52, weight: .bold))
+                    .foregroundStyle(.white)
+            }
                 .accessibilityHidden(true)
 
             Text("Setting up CoHear")
@@ -27,6 +31,7 @@ struct ModelSetupView: View {
                 VStack(spacing: 12) {
                     ProgressView(value: p)
                         .progressViewStyle(.linear)
+                        .tint(Theme.teal)
                         .frame(maxWidth: 320)
                     Text("Downloading the speech model — \(Int(p * 100))%")
                         .font(Theme.label())
@@ -44,9 +49,9 @@ struct ModelSetupView: View {
                 VStack(spacing: 16) {
                     Text(message ?? "Something went wrong.")
                         .font(Theme.label())
-                        .foregroundStyle(.red)
+                        .foregroundStyle(Theme.stop)
                         .multilineTextAlignment(.center)
-                    BigButton(title: "Try again", systemImage: "arrow.clockwise") { retry() }
+                    PillButton(title: "Try again", systemImage: "arrow.clockwise", tint: Theme.blue) { retry() }
                         .frame(maxWidth: 320)
                 }
             case .ready:
@@ -54,7 +59,7 @@ struct ModelSetupView: View {
             }
 
             Text("This happens once. After it's done, everything runs on your phone — your voice never leaves it.")
-                .font(.subheadline)
+                .font(Theme.label())
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 360)
@@ -64,4 +69,11 @@ struct ModelSetupView: View {
         }
         .padding(28)
     }
+}
+
+#Preview("Downloading") {
+    ModelSetupView(state: .downloading(0.42), message: nil) {}
+}
+#Preview("Failed") {
+    ModelSetupView(state: .failed("No internet"), message: "Couldn't download the speech model. Check your connection.") {}
 }

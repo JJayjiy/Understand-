@@ -1,0 +1,14 @@
+title: CoHear
+description: On-device speech recognition for dysarthria
+theme: jekyll-theme-minimal
+# Only the two public pages get built; the rest of docs/ is internal notes.
+exclude:
+  - APP_PLAN.md
+  - aac-abandonment.md
+  - claude-code-brief.md
+  - consent-form.md
+  - data-and-finetuning.md
+  - institutional-research-map.md
+  - pediatric-data.md
+  - phonological-layer.md
+  - torgo-setup.md

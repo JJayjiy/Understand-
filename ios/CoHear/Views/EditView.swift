@@ -20,7 +20,8 @@ struct EditView: View {
                 TextEditor(text: $text)
                     .font(Theme.body(session.textScale))
                     .padding(8)
-                    .background(.secondary.opacity(0.10), in: RoundedRectangle(cornerRadius: 16))
+                    .scrollContentBackground(.hidden)
+                    .background(Theme.card, in: RoundedRectangle(cornerRadius: Theme.cornerRadius))
                     .focused($focused)
                     .accessibilityLabel("Edit what you said")
 
@@ -41,17 +42,26 @@ struct EditView: View {
 
                 Spacer(minLength: 0)
 
-                BigButton(title: "Save", systemImage: "checkmark", tint: .accentColor) {
+                PillButton(title: "Save", systemImage: "checkmark", tint: Theme.blue, filled: true) {
                     session.update(utterance.id, text: text)
                     dismiss()
                 }
 
-                BigButton(title: "Delete", systemImage: "trash", tint: .red.opacity(0.85)) {
-                    confirmingDelete = true
+                HStack(spacing: 12) {
+                    if session.filterOtherVoices, utterance.voice != .other {
+                        PillButton(title: "Not me", systemImage: "person.2", tint: Theme.teal, filled: false) {
+                            session.setOwnVoice(utterance.id, isOwn: false)
+                            dismiss()
+                        }
+                    }
+                    PillButton(title: "Delete", systemImage: "trash", tint: Theme.stop, filled: false) {
+                        confirmingDelete = true
+                    }
                 }
             }
             .padding(Theme.spacing)
-            .navigationTitle("Edit")
+            .background(Theme.canvas.ignoresSafeArea())
+            .navigationTitle("Edit this line")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -74,3 +84,10 @@ struct EditView: View {
         }
     }
 }
+
+#if DEBUG
+#Preview {
+    EditView(utterance: Utterance(raw: "Can we go to the park after lunch"))
+        .environmentObject(SessionStore.preview())
+}
+#endif
