@@ -17,15 +17,26 @@ struct ShowView: View {
             Color(red: 0.05, green: 0.06, blue: 0.09).ignoresSafeArea()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    // fullText already excludes lines attributed to other voices —
-                    // what gets turned around and shown is the speaker's words only.
-                    Text(session.fullText)
-                        .font(Theme.show(session.textScale))
-                        .foregroundStyle(.white)
-                        .multilineTextAlignment(.leading)
-                        .lineSpacing(6)
+                VStack(alignment: .leading, spacing: 28) {
+                    // visibleUtterances already excludes lines attributed to other
+                    // voices — what gets turned around is the speaker's words only.
+                    ForEach(session.visibleUtterances) { u in
+                        let low = session.showConfidence && u.confidence == .low
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(u.text)
+                                .font(Theme.show(session.textScale))
+                                .foregroundStyle(low ? Color.white.opacity(0.55) : .white)
+                                .italic(low)
+                                .lineSpacing(6)
+                                .fixedSize(horizontal: false, vertical: true)
+                            if low {
+                                Label("might not be right", systemImage: "questionmark.circle")
+                                    .font(Theme.label())
+                                    .foregroundStyle(Theme.warn)
+                            }
+                        }
                         .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
                 .padding(28)
                 .padding(.top, 72)

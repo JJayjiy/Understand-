@@ -30,6 +30,7 @@ Then measure it:
 
 import argparse
 import json
+import math
 import sys
 import time
 from pathlib import Path
@@ -240,6 +241,7 @@ def main():
         "learning_rate": args.lr,
         "num_train_epochs": args.epochs,
         "warmup_ratio": 0.1,
+        "max_grad_norm": 1.0,
         "logging_steps": 10,
         "save_strategy": "epoch",
         "save_total_limit": 20,   # never prune: an interrupted run's checkpoint is the whole result
@@ -279,12 +281,39 @@ def main():
             processor.save_pretrained(path)
             print(f"\n  [saved] {path}  (mergeable — usable even if you stop here)")
 
+    class DivergenceGuard(TrainerCallback):
+        """Small datasets + many epochs can blow up late in training: loss falls
+        to ~0.2, then one bad step sends it to 10+ and the model starts emitting
+        nothing (seen on TORGO M01/M05 personal runs at lr 1e-3). Keep an in-memory
+        copy of the adapter at the lowest loss; if loss spikes or goes NaN, stop
+        and roll back to that copy before anything is saved or merged."""
+        def __init__(self):
+            self.best, self.best_epoch, self.best_state = float("inf"), None, None
+            self.diverged, self.history = False, []
+
+        def on_log(self, targs_, state, control, logs=None, **kw):
+            if not logs or "loss" not in logs:
+                return
+            loss, ep = float(logs["loss"]), float(state.epoch or 0)
+            self.history.append([round(ep, 3), loss])
+            spiked = self.best_state is not None and ep > 1 and loss > max(4 * self.best, self.best + 2.0)
+            if math.isnan(loss) or math.isinf(loss) or spiked:
+                self.diverged = True
+                control.should_training_stop = True
+                print(f"\n  [guard] loss spiked to {loss:.2f} at epoch {ep:.1f} "
+                      f"(best {self.best:.3f} at epoch {self.best_epoch:.1f}) — stopping, rolling back")
+                return
+            if loss < self.best:
+                self.best, self.best_epoch = loss, ep
+                self.best_state = {n: p.detach().clone() for n, p in model.named_parameters() if p.requires_grad}
+
+    guard = DivergenceGuard()
     trainer = Seq2SeqTrainer(
         model=model,
         args=targs,
         train_dataset=ds,
         data_collator=collator,
-        callbacks=[SaveAdapterEachEpoch()],
+        callbacks=[SaveAdapterEachEpoch(), guard],
     )
 
     # NOTE: no --resume option. HF Trainer's resume does not reliably restore PEFT adapter
@@ -294,6 +323,14 @@ def main():
     t0 = time.time()
     result = trainer.train()
     elapsed = time.time() - t0
+
+    if guard.diverged and guard.best_state:
+        import torch
+        with torch.no_grad():
+            for n, p in model.named_parameters():
+                if n in guard.best_state:
+                    p.copy_(guard.best_state[n])
+        print(f"  [guard] restored adapter from epoch {guard.best_epoch:.1f} (loss {guard.best:.3f})")
 
     # ---- save ----
     model.save_pretrained(out / "adapter")
@@ -324,6 +361,10 @@ def main():
         "total_params": total,
         "train_runtime_sec": round(elapsed, 1),
         "final_loss": float(result.training_loss),
+        "diverged": guard.diverged,
+        "best_loss": guard.best if guard.best != float("inf") else None,
+        "best_epoch": guard.best_epoch,
+        "loss_history": guard.history,
         "smoke_test": args.smoke_test,
     }
     (out / "train_log.json").write_text(json.dumps(log, indent=2))

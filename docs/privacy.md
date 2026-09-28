@@ -1,6 +1,6 @@
 # CoHear — Privacy Policy
 
-Last updated: September 23, 2026
+Last updated: September 27, 2026
 
 CoHear does not collect, store, transmit, or sell any personal data. There is no account, no analytics, no advertising, and no server operated by the developer.
 
@@ -13,6 +13,8 @@ CoHear does not collect, store, transmit, or sell any personal data. There is no
 **Voice characteristics.** To tell your voice apart from other people in the room, CoHear computes a small numeric summary of your voice (pitch and spectral shape). It is held in memory only, is not a recording, cannot reconstruct your speech, and is discarded when the session is cleared or the app quits.
 
 **Settings.** Your text size, cleanup, and voice-filter preferences are stored on the device.
+
+**Teach CoHear your voice (optional).** If you choose to record phrases so CoHear can learn how you speak, those recordings are saved in the app's own storage on your phone. They are never uploaded by the app. They leave your phone only if you tap Export and choose where to send them (for example, AirDrop to your own computer to build a personal model), or copy them yourself using Finder. You can delete any recording, or all of them, at any time. A personal model built from your recordings is installed by copying it onto your phone; it runs on the device like the other speech models.
 
 ## The one network request
 

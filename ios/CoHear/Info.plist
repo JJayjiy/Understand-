@@ -19,11 +19,17 @@
 	<key>CFBundleShortVersionString</key>
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
-	<string>2</string>
+	<string>4</string>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.utilities</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Only used if you pick Apple dictation in Settings, to compare it with CoHear's model. Runs on this phone.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>CoHear listens so it can show you what you said. Your voice is processed on this phone and never sent anywhere.</string>
 	<key>UILaunchScreen</key>

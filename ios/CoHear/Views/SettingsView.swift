@@ -4,12 +4,10 @@ struct SettingsView: View {
     @EnvironmentObject var session: SessionStore
     @Environment(\.dismiss) private var dismiss
     @State private var confirmingClear = false
-    @State private var modelName = "Loading…"
 
-    private var modelNote: String {
-        modelName.hasPrefix("CoHear")
-            ? "Adapted on speech from adults with cerebral palsy and ALS. Word error on the most severely affected test speaker: 34.6%, down from 84.4%."
-            : "The general-purpose model. The CoHear model couldn't be loaded — check your connection and reopen the app."
+    private func isFailed(_ s: SessionStore.ModelState) -> Bool {
+        if case .failed = s { return true }
+        return false
     }
 
     var body: some View {
@@ -63,6 +61,24 @@ struct SettingsView: View {
                     Text("Other voices")
                 }
 
+                Section {
+                    NavigationLink {
+                        TeachVoiceView()
+                    } label: {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Label("Teach CoHear your voice", systemImage: "waveform.badge.mic")
+                                .font(Theme.label())
+                            Text(PersonalModel.isInstalled
+                                 ? (PersonalModel.summary ?? "Personal model installed.")
+                                 : "Record phrases so CoHear can learn how you speak.")
+                                .font(.subheadline).foregroundStyle(.secondary)
+                        }
+                        .frame(minHeight: Theme.minTarget)
+                    }
+                } header: {
+                    Text("Your voice")
+                }
+
                 Section("This session") {
                     Button(role: .destructive) { confirmingClear = true } label: {
                         Label("Clear everything said", systemImage: "trash")
@@ -76,7 +92,7 @@ struct SettingsView: View {
                     VStack(alignment: .leading, spacing: 10) {
                         Label("Your voice never leaves this phone.", systemImage: "lock.fill")
                             .font(Theme.label())
-                        Text("Speech recognition and Clarify both run on the device. CoHear has no server, no account, and no analytics. Nothing you say is stored after you close the app.")
+                        Text("Speech recognition and Clarify both run on the device. CoHear has no server, no account, and no analytics. Conversations are not stored after you close the app. Recordings you make in Teach CoHear your voice stay on this phone until you delete or export them.")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                         Text("The speech model is downloaded once from Hugging Face on first launch. That download is the only network request the app makes.")
@@ -86,15 +102,47 @@ struct SettingsView: View {
                     .padding(.vertical, 6)
                 }
 
-                Section("Speech model") {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(modelName).font(Theme.label())
-                        Text(modelNote)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                Section {
+                    ForEach(Transcriber.ModelChoice.available) { choice in
+                        Button {
+                            guard choice != session.modelChoice else { return }
+                            Task { await session.switchModel(to: choice) }
+                        } label: {
+                            HStack(alignment: .top, spacing: 12) {
+                                Image(systemName: choice == session.modelChoice ? "checkmark.circle.fill" : "circle")
+                                    .font(.system(size: 24))
+                                    .foregroundStyle(choice == session.modelChoice ? Theme.teal : .secondary)
+                                    .padding(.top, 2)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(choice.title).font(Theme.label()).foregroundStyle(.primary)
+                                    Text(choice.note).font(.subheadline).foregroundStyle(.secondary)
+                                }
+                            }
+                            .frame(maxWidth: .infinity, minHeight: Theme.minTarget, alignment: .leading)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(session.modelState != .ready && session.modelState != .notLoaded
+                                  && !isFailed(session.modelState))
                     }
-                    .padding(.vertical, 4)
-                    .task { modelName = await session.transcriber.loadedName }
+                    Text("Switching downloads the new model once, then it's cached. Same phone, same speaker, different model — that's the comparison worth making.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                } header: {
+                    Text("Speech model")
+                }
+
+                Section {
+                    Toggle(isOn: $session.showConfidence) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Flag uncertain lines").font(Theme.label())
+                            Text("When the model was guessing, the line is marked so a reader knows not to trust it. Turn off to see raw output.")
+                                .font(.subheadline).foregroundStyle(.secondary)
+                        }
+                    }
+                    .frame(minHeight: Theme.minTarget)
+                } header: {
+                    Text("Honesty")
                 }
 
                 Section("About") {

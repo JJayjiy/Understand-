@@ -115,6 +115,34 @@ def print_table(title, rows):
 
 
 # ---------------------------------------------------------------- main
+
+def collapse_repeats(text: str, max_n: int = 4, min_reps: int = 3) -> str:
+    """Collapse runaway loops: any 1..max_n-word phrase repeated min_reps+ times
+    in a row becomes one copy. "what what what what" -> "what";
+    "its easy its easy its easy" -> "its easy". Same rule as the iOS app."""
+    words = text.split()
+    changed = True
+    while changed:
+        changed = False
+        for n in range(1, max_n + 1):
+            i = 0
+            out = []
+            while i < len(words):
+                chunk = words[i:i + n]
+                reps = 1
+                while words[i + reps * n:i + (reps + 1) * n] == chunk and len(chunk) == n:
+                    reps += 1
+                if reps >= min_reps:
+                    out += chunk
+                    i += reps * n
+                    changed = True
+                else:
+                    out.append(words[i])
+                    i += 1
+            words = out
+    return " ".join(words)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--manifest", required=True, help="a .jsonl from torgo_prep.py (use test.jsonl)")
@@ -135,6 +163,9 @@ def main():
     ap.add_argument("--backend", default="faster-whisper", choices=["faster-whisper", "transformers"],
                     help="faster-whisper for stock models (fast); transformers to evaluate a "
                          "fine-tuned model folder produced by finetune_lora.py (models/<run>/merged)")
+    ap.add_argument("--guard", action="store_true",
+                    help="repetition guard: no repeated 3-grams while decoding, then collapse any "
+                         "word/phrase repeated 3+ times in a row (what the app does)")
     args = ap.parse_args()
 
     transcribe_fn = None
@@ -142,6 +173,8 @@ def main():
         try:
             import torch
             from transformers import WhisperProcessor, WhisperForConditionalGeneration
+            from transformers.utils import logging as hf_logging
+            hf_logging.set_verbosity_error()   # silence the max_length/max_new_tokens spam
         except ImportError:
             sys.exit("Missing transformers/torch.  pip install transformers torch soundfile")
         import soundfile as sf
@@ -162,7 +195,8 @@ def main():
             feats = proc.feature_extractor(audio, sampling_rate=16000,
                                            return_tensors="pt").input_features.to(dev)
             with torch.no_grad():
-                ids = hf_model.generate(feats, forced_decoder_ids=forced, max_new_tokens=200)
+                gen_kw = {"no_repeat_ngram_size": 3} if args.guard else {}
+                ids = hf_model.generate(feats, forced_decoder_ids=forced, max_new_tokens=200, **gen_kw)
             return proc.batch_decode(ids, skip_special_tokens=True)[0].strip()
     else:
         try:
@@ -209,6 +243,7 @@ def main():
                 language="en",                     # never let it guess — atypical speech
                                                    # often gets misdetected as another language
                 condition_on_previous_text=False,  # stops hallucination carry-over
+                **({"no_repeat_ngram_size": 3} if args.guard else {}),
             )
             return " ".join(s.text for s in segments).strip()
 
@@ -218,6 +253,8 @@ def main():
         audio = rec["audio_path"]
         try:
             hyp_raw = transcribe_fn(audio)
+            if args.guard:
+                hyp_raw = collapse_repeats(hyp_raw)
         except Exception as e:
             print(f"    [warn] {rec['utt_id']}: {e}")
             hyp_raw = ""

@@ -91,6 +91,7 @@ struct RootView: View {
                             scale: session.textScale,
                             isLatest: i == session.utterances.count - 1,
                             filtering: session.filterOtherVoices,
+                            showConfidence: session.showConfidence,
                             onEdit: { editing = u },
                             onClaim: { session.setOwnVoice(u.id, isOwn: true) }
                         )
@@ -180,11 +181,16 @@ struct UtteranceRow: View {
     let scale: Double
     let isLatest: Bool
     let filtering: Bool
+    var showConfidence: Bool = true
     let onEdit: () -> Void
     let onClaim: () -> Void
 
     private var dimmed: Bool { filtering && utterance.voice == .other }
     private var unsure: Bool { filtering && utterance.voice == .uncertain }
+    /// The model was guessing. Shown, never hidden — the speaker may still
+    /// recognise what they said — but marked so nobody reads it as fact.
+    private var lowConf: Bool { showConfidence && utterance.confidence == .low }
+    private var midConf: Bool { showConfidence && utterance.confidence == .medium }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -192,9 +198,15 @@ struct UtteranceRow: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(utterance.text)
                         .font(isLatest && !dimmed ? Theme.latest(scale) : Theme.body(scale))
-                        .foregroundStyle(dimmed ? .secondary : .primary)
+                        .foregroundStyle(dimmed || lowConf ? .secondary : .primary)
+                        .italic(lowConf)
                         .multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
+                    if lowConf && !dimmed {
+                        Label("Not sure it heard this right — tap to fix", systemImage: "questionmark.circle")
+                            .font(Theme.label())
+                            .foregroundStyle(Theme.warn)
+                    }
                     if let point = utterance.point, !point.isEmpty,
                        utterance.edited == nil, !dimmed {
                         Text(point)
@@ -227,9 +239,15 @@ struct UtteranceRow: View {
                         radius: isLatest ? 12 : 4, y: isLatest ? 4 : 1)
         )
         .overlay(alignment: .leading) {
-            if isLatest && !dimmed {
+            if lowConf && !dimmed {
                 RoundedRectangle(cornerRadius: 3)
-                    .fill(Theme.brand)
+                    .fill(Theme.warn)
+                    .frame(width: 5)
+                    .padding(.vertical, 14)
+                    .padding(.leading, 6)
+            } else if isLatest && !dimmed {
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(midConf ? AnyShapeStyle(Theme.warn.opacity(0.6)) : AnyShapeStyle(Theme.brand))
                     .frame(width: 5)
                     .padding(.vertical, 14)
                     .padding(.leading, 6)
@@ -237,7 +255,7 @@ struct UtteranceRow: View {
         }
         .overlay(alignment: .topTrailing) {
             if dimmed || unsure {
-                Text(dimmed ? "not you" : "not sure")
+                Text(dimmed ? "not you" : "not your voice?")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 10).padding(.vertical, 5)
@@ -246,7 +264,8 @@ struct UtteranceRow: View {
             }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(dimmed ? "Someone else: \(utterance.text)" : utterance.text)
+        .accessibilityLabel(dimmed ? "Someone else: \(utterance.text)"
+                            : lowConf ? "Uncertain: \(utterance.text)" : utterance.text)
     }
 }
 

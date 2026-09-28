@@ -37,9 +37,13 @@ targets:
       properties:
         CFBundleDisplayName: CoHear
         CFBundleShortVersionString: "1.0"
-        CFBundleVersion: "2"
+        CFBundleVersion: "4"
+        NSSpeechRecognitionUsageDescription: "Only used if you pick Apple dictation in Settings, to compare it with CoHear's model. Runs on this phone."
         NSMicrophoneUsageDescription: "CoHear listens so it can show you what you said. Your voice is processed on this phone and never sent anywhere."
         ITSAppUsesNonExemptEncryption: false
+        # Lets Finder (iPhone > Files > CoHear) copy recordings out and a personal model in.
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
         LSApplicationCategoryType: public.app-category.utilities
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:

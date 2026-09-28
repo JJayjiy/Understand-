@@ -25,6 +25,8 @@ enum Theme {
     static let live = Color(red: 0.13, green: 0.68, blue: 0.42)
     /// Stop / destructive.
     static let stop = Color(red: 0.80, green: 0.22, blue: 0.24)
+    /// "The model was guessing." Amber, not red: a caution, not an error.
+    static let warn = Color(red: 0.85, green: 0.55, blue: 0.10)
 
     static let brand = LinearGradient(colors: [blue, teal],
                                       startPoint: .topLeading, endPoint: .bottomTrailing)

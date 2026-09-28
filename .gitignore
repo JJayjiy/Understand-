@@ -15,7 +15,7 @@ sessions.csv
 *.m4a
 *.webm
 *.flac
-models/
+/models/
 checkpoints/
 *.pt
 *.bin
