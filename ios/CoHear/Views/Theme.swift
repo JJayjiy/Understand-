@@ -163,7 +163,7 @@ struct HeroButton: View {
                 VStack(spacing: 6) {
                     Image(systemName: listening ? "stop.fill" : "waveform")
                         .font(.system(size: 46, weight: .bold))
-                    Text(listening ? "Stop" : "Listen")
+                    Text(listening ? L("Stop", "停止") : L("Listen", "听"))
                         .font(.system(size: 22, weight: .bold, design: .rounded))
                 }
                 .foregroundStyle(.white)
@@ -173,8 +173,8 @@ struct HeroButton: View {
         .buttonStyle(PressStyle())
         .onAppear { pulse = true }
         .onChange(of: listening) { _, on in pulse = on }
-        .accessibilityLabel(listening ? "Stop listening" : "Listen")
-        .accessibilityHint(listening ? "" : "Starts listening. Speak, then pause.")
+        .accessibilityLabel(listening ? L("Stop listening", "停止听") : L("Listen", "听"))
+        .accessibilityHint(listening ? "" : L("Starts listening. Speak, then pause.", "开始听。说话，然后停一下。"))
     }
 }
 

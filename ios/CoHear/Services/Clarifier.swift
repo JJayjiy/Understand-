@@ -40,17 +40,20 @@ final class Clarifier {
             case .available:
                 return nil
             case .unavailable(.deviceNotEligible):
-                return "This iPhone doesn't support Apple Intelligence, so Clarify is off. Transcription still works."
+                return L("This iPhone doesn't support Apple Intelligence, so Clarify is off. Transcription still works.",
+                         "这台 iPhone 不支持 Apple 智能，所以“整理”已关闭。语音转文字照常可用。")
             case .unavailable(.appleIntelligenceNotEnabled):
-                return "Turn on Apple Intelligence in Settings to enable Clarify."
+                return L("Turn on Apple Intelligence in Settings to enable Clarify.",
+                         "在系统设置中打开 Apple 智能即可使用“整理”。")
             case .unavailable(.modelNotReady):
-                return "Apple Intelligence is still downloading. Clarify will turn on when it's ready."
+                return L("Apple Intelligence is still downloading. Clarify will turn on when it's ready.",
+                         "Apple 智能还在下载中，下载完成后“整理”会自动打开。")
             case .unavailable:
-                return "Clarify isn't available on this device right now."
+                return L("Clarify isn't available on this device right now.", "这台设备目前无法使用“整理”。")
             }
         }
         #endif
-        return "Clarify needs iOS 26 or later."
+        return L("Clarify needs iOS 26 or later.", "“整理”需要 iOS 26 或更高版本。")
     }
 
     private static let instructions = """
@@ -70,10 +73,14 @@ final class Clarifier {
     You are helping a listener. You are not speaking for the person.
     """
 
-    func clarify(_ raw: String) async throws -> Result {
+    func clarify(_ raw: String, language: AppLanguage = .en) async throws -> Result {
         #if canImport(FoundationModels)
         if #available(iOS 26, *) {
-            let session = LanguageModelSession(instructions: Self.instructions)
+            // Answer in the speaker's language; Simplified characters for Chinese.
+            let lang = language == .zh
+                ? "\n\nThe transcript is in Mandarin Chinese. Write CLEAN and POINT in Simplified Chinese."
+                : ""
+            let session = LanguageModelSession(instructions: Self.instructions + lang)
             let response = try await session.respond(
                 to: "Transcript: \(raw)",
                 generating: Clarified.self
@@ -86,7 +93,7 @@ final class Clarifier {
 
     enum ClarifierError: LocalizedError {
         case unavailable
-        var errorDescription: String? { "Clarify isn't available on this device." }
+        var errorDescription: String? { L("Clarify isn't available on this device.", "这台设备无法使用“整理”。") }
     }
 }
 

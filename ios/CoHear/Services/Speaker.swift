@@ -20,7 +20,7 @@ final class Speaker: NSObject, ObservableObject {
     func speak(_ text: String) {
         stop()
         let u = AVSpeechUtterance(string: text)
-        u.voice = AVSpeechSynthesisVoice(language: "en-US")
+        u.voice = AVSpeechSynthesisVoice(language: AppLanguage.current.locale)   // en-US or zh-CN
         u.rate = AVSpeechUtteranceDefaultSpeechRate * 0.92   // a touch slower than default
         u.prefersAssistiveTechnologySettings = true          // respect the user's VoiceOver rate/voice
         // Route to the speaker even if a mic session is active.

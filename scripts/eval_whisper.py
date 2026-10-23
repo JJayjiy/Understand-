@@ -55,8 +55,34 @@ _NUM = {
 }
 
 
+LANG = "en"   # set from --language in main()
+
+
+def _to_simplified(t: str) -> str:
+    """Whisper mixes Traditional and Simplified characters. Count 說 and 说 as
+    the same character (the app converts to Simplified too). Optional dep."""
+    for mod in ("zhconv", "opencc"):
+        try:
+            if mod == "zhconv":
+                import zhconv
+                return zhconv.convert(t, "zh-cn")
+            import opencc
+            return opencc.OpenCC("t2s").convert(t)
+        except Exception:
+            continue
+    return t
+
+
 def normalize(text: str) -> str:
-    """lowercase, strip punctuation, digits -> words, collapse whitespace."""
+    """lowercase, strip punctuation, digits -> words, collapse whitespace.
+    Chinese: Simplified characters, no punctuation, one token per character,
+    so WER on the result is the character error rate (CER), the standard
+    metric for Chinese (there are no spaces between words)."""
+    if LANG == "zh":
+        import unicodedata
+        t = _to_simplified(text)
+        chars = [c for c in t if not c.isspace() and not unicodedata.category(c).startswith("P")]
+        return " ".join(chars)
     t = text.lower().strip()
     t = t.replace("’", "'").replace("—", " ").replace("-", " ")
     t = t.translate(_PUNCT)
@@ -163,10 +189,14 @@ def main():
     ap.add_argument("--backend", default="faster-whisper", choices=["faster-whisper", "transformers"],
                     help="faster-whisper for stock models (fast); transformers to evaluate a "
                          "fine-tuned model folder produced by finetune_lora.py (models/<run>/merged)")
+    ap.add_argument("--language", default="en", choices=["en", "zh"],
+                    help="zh = Mandarin; scores character error rate instead of word error rate")
     ap.add_argument("--guard", action="store_true",
                     help="repetition guard: no repeated 3-grams while decoding, then collapse any "
                          "word/phrase repeated 3+ times in a row (what the app does)")
     args = ap.parse_args()
+    global LANG
+    LANG = args.language
 
     transcribe_fn = None
     if args.backend == "transformers":
@@ -179,11 +209,12 @@ def main():
             sys.exit("Missing transformers/torch.  pip install transformers torch soundfile")
         import soundfile as sf
 
-        proc = WhisperProcessor.from_pretrained(args.model, language="english", task="transcribe")
+        lang_name = "chinese" if args.language == "zh" else "english"
+        proc = WhisperProcessor.from_pretrained(args.model, language=lang_name, task="transcribe")
         hf_model = WhisperForConditionalGeneration.from_pretrained(args.model)
         dev = "cuda" if torch.cuda.is_available() else "cpu"
         hf_model.to(dev).eval()
-        forced = proc.get_decoder_prompt_ids(language="english", task="transcribe")
+        forced = proc.get_decoder_prompt_ids(language=lang_name, task="transcribe")
 
         def transcribe_fn(path):
             audio, sr = sf.read(path, dtype="float32")
@@ -240,7 +271,7 @@ def main():
             segments, _ = model.transcribe(
                 path,
                 beam_size=args.beam_size,
-                language="en",                     # never let it guess — atypical speech
+                language=args.language,            # never let it guess — atypical speech
                                                    # often gets misdetected as another language
                 condition_on_previous_text=False,  # stops hallucination carry-over
                 **({"no_repeat_ngram_size": 3} if args.guard else {}),
@@ -310,6 +341,8 @@ def main():
     print("=" * 78)
     print(f"\n  OVERALL")
     if multi:
+        if LANG == "zh":
+            print("    (Chinese: 'WER' below is the character error rate)")
         print(f"    sentence WER    : {pct(sum(r['wer'] for r in multi) / len(multi))}   ({len(multi)} utterances)")
     if single:
         print(f"    word accuracy   : {pct(sum(r['exact'] for r in single) / len(single))}   ({len(single)} utterances)")

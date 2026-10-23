@@ -37,7 +37,7 @@ targets:
       properties:
         CFBundleDisplayName: CoHear
         CFBundleShortVersionString: "1.0"
-        CFBundleVersion: "4"
+        CFBundleVersion: "6"
         NSSpeechRecognitionUsageDescription: "Only used if you pick Apple dictation in Settings, to compare it with CoHear's model. Runs on this phone."
         NSMicrophoneUsageDescription: "CoHear listens so it can show you what you said. Your voice is processed on this phone and never sent anywhere."
         ITSAppUsesNonExemptEncryption: false

@@ -16,8 +16,8 @@ actor AppleRecognizer {
 
     private let recognizer: SFSpeechRecognizer?
 
-    init() {
-        recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+    init(locale: String = "en-US") {
+        recognizer = SFSpeechRecognizer(locale: Locale(identifier: locale))
     }
 
     var isAvailable: Bool {
@@ -81,8 +81,10 @@ actor AppleRecognizer {
         case unavailable, notAuthorized
         var errorDescription: String? {
             switch self {
-            case .unavailable: return "Apple's on-device recognizer isn't available on this phone."
-            case .notAuthorized: return "Speech recognition permission was denied. Enable it in iPhone Settings → CoHear."
+            case .unavailable: return L("Apple's on-device recognizer isn't available on this phone.",
+                                        "这台手机不支持苹果的本机语音识别。")
+            case .notAuthorized: return L("Speech recognition permission was denied. Enable it in iPhone Settings → CoHear.",
+                                          "语音识别权限被拒绝。请在 iPhone 设置 → CoHear 中打开。")
             }
         }
     }

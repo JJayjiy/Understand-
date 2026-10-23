@@ -9,9 +9,12 @@
 /* Begin PBXBuildFile section */
 		0A8F603CC39ADD11E6739083 /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = 9D908E33FCD97FD581EDA212 /* WhisperKit */; };
 		2AA72CAACCCBE57ED7A238B0 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9326486973A3EFBC276C775A /* Theme.swift */; };
+		3061AF8974FC13A592FCF353 /* Features.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02475D6625ECA0868D5B3F62 /* Features.swift */; };
+		3D6591DC0BBA42A6EDDF28E6 /* QuickPhrasesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DB1F6E1A28AE6EB210CA733 /* QuickPhrasesView.swift */; };
 		4AD261D5E0E6F6BFAFEA2A16 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C734AF58F15549F16356E39A /* RootView.swift */; };
 		4C46134EA04B69CA0E3A23C8 /* TeachVoiceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B096CD1C61D1A7EC2F926C8E /* TeachVoiceView.swift */; };
 		63C5B15FEB5A808123E432B3 /* ModelSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72A7D41078F93D7F7A1F07E8 /* ModelSetupView.swift */; };
+		645D6CCCAA6D9E9B16DC7D79 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FBEE7D1555668AFE3C0DF1B /* WelcomeView.swift */; };
 		71BD8B9B8D3CFD740ECE1CA5 /* PersonalModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82249372D138A9FC9DE683FE /* PersonalModel.swift */; };
 		74857AF3EC8F07D6ED8C9A77 /* VoiceProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ABC8BB8E57B5815F6A3EEBA /* VoiceProfile.swift */; };
 		8F90E58170A0336DA08DC11C /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 63D4D3BCE09A76C4A60D53E0 /* PrivacyInfo.xcprivacy */; };
@@ -31,8 +34,10 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		02475D6625ECA0868D5B3F62 /* Features.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features.swift; sourceTree = "<group>"; };
 		1ABC8BB8E57B5815F6A3EEBA /* VoiceProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceProfile.swift; sourceTree = "<group>"; };
 		2BE7E282B3E9C9DD83A0AADB /* ShowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShowView.swift; sourceTree = "<group>"; };
+		2DB1F6E1A28AE6EB210CA733 /* QuickPhrasesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickPhrasesView.swift; sourceTree = "<group>"; };
 		2DC924DE9D699397DB4430D8 /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
 		46A2EBF6FE9711A467945686 /* EditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditView.swift; sourceTree = "<group>"; };
 		49A9F3019B4302098AD1C913 /* Clarifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clarifier.swift; sourceTree = "<group>"; };
@@ -40,6 +45,7 @@
 		513A68EDA47B048BF619F903 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		63C646931ECA7378194A0180 /* VoiceSamples.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceSamples.swift; sourceTree = "<group>"; };
 		63D4D3BCE09A76C4A60D53E0 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		6FBEE7D1555668AFE3C0DF1B /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		722A7A4AD3707166C078FD10 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		72A7D41078F93D7F7A1F07E8 /* ModelSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelSetupView.swift; sourceTree = "<group>"; };
 		82249372D138A9FC9DE683FE /* PersonalModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonalModel.swift; sourceTree = "<group>"; };
@@ -73,6 +79,7 @@
 				F69068F9C1E4350F7B9374BE /* AppleRecognizer.swift */,
 				9464F84013CA08DC486A25E5 /* AudioRecorder.swift */,
 				49A9F3019B4302098AD1C913 /* Clarifier.swift */,
+				02475D6625ECA0868D5B3F62 /* Features.swift */,
 				82249372D138A9FC9DE683FE /* PersonalModel.swift */,
 				B8D4481A779D63CD43CDE290 /* Speaker.swift */,
 				D79066757B7E6FF481F6FD3B /* Transcriber.swift */,
@@ -118,11 +125,13 @@
 			children = (
 				46A2EBF6FE9711A467945686 /* EditView.swift */,
 				72A7D41078F93D7F7A1F07E8 /* ModelSetupView.swift */,
+				2DB1F6E1A28AE6EB210CA733 /* QuickPhrasesView.swift */,
 				C734AF58F15549F16356E39A /* RootView.swift */,
 				D2056466C8A3EFEF915F803A /* SettingsView.swift */,
 				2BE7E282B3E9C9DD83A0AADB /* ShowView.swift */,
 				B096CD1C61D1A7EC2F926C8E /* TeachVoiceView.swift */,
 				9326486973A3EFBC276C775A /* Theme.swift */,
+				6FBEE7D1555668AFE3C0DF1B /* WelcomeView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -225,8 +234,10 @@
 				ABF4216D59E11C45F408B413 /* Clarifier.swift in Sources */,
 				F1EA348FDE2415B2B4E02958 /* CoHearApp.swift in Sources */,
 				F0004BDD3DE202412C9878C7 /* EditView.swift in Sources */,
+				3061AF8974FC13A592FCF353 /* Features.swift in Sources */,
 				63C5B15FEB5A808123E432B3 /* ModelSetupView.swift in Sources */,
 				71BD8B9B8D3CFD740ECE1CA5 /* PersonalModel.swift in Sources */,
+				3D6591DC0BBA42A6EDDF28E6 /* QuickPhrasesView.swift in Sources */,
 				4AD261D5E0E6F6BFAFEA2A16 /* RootView.swift in Sources */,
 				D95A25B8DD20E2DC9402EFB3 /* SessionStore.swift in Sources */,
 				FFEB59AD00037B3958FDFE79 /* SettingsView.swift in Sources */,
@@ -238,6 +249,7 @@
 				E87C5ED3CB08DB969C9E970E /* Utterance.swift in Sources */,
 				74857AF3EC8F07D6ED8C9A77 /* VoiceProfile.swift in Sources */,
 				92DA583892A0CEA25BE70393 /* VoiceSamples.swift in Sources */,
+				645D6CCCAA6D9E9B16DC7D79 /* WelcomeView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

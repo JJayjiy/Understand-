@@ -24,14 +24,25 @@ cd "$(dirname "$0")/.."
 NAME="${1:?usage: build_personal_model.sh <name> <export.zip> [--skip-eval] [--keep-remote]}"
 EXPORT="${2:?usage: build_personal_model.sh <name> <export.zip>}"
 shift 2
-SKIP_EVAL=0; KEEP_REMOTE=0
+SKIP_EVAL=0; KEEP_REMOTE=0; EVAL_ONLY=0
 for a in "$@"; do
-  case "$a" in --skip-eval) SKIP_EVAL=1 ;; --keep-remote) KEEP_REMOTE=1 ;; esac
+  case "$a" in
+    --skip-eval) SKIP_EVAL=1 ;;
+    --keep-remote) KEEP_REMOTE=1 ;;
+    # Fastest route to the phone: build with --skip-eval first (final model +
+    # convert only), install it, then run again later with --eval-only to get
+    # the before/after numbers. Each half takes about the same time.
+    --eval-only) EVAL_ONLY=1 ;;
+  esac
 done
-SLUG=$(echo "$NAME" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9')
-LR=3e-4; EPOCHS=10
+# "user_" prefix keeps real users apart from the TORGO study folders. macOS paths
+# are case-insensitive, so a bare "m04" would silently overwrite the study's "M04".
+SLUG="user_$(echo "$NAME" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9')"
+LR=3e-4
+# Training device. cpu on a Mac (MPS leaks memory on long runs). On an NVIDIA
+# machine (e.g. a DGX Spark) run with DEVICE=cuda: same recipe, minutes not an hour.
+DEVICE="${DEVICE:-cpu}"
 D="data/personal/$SLUG"
-R="eval_results/personal/$SLUG"
 
 echo "== 1/4  Split"
 python3 scripts/make_personal_split.py --speaker "$SLUG" --export "$EXPORT"
@@ -44,35 +55,59 @@ with open(f"{d}/all.jsonl", "w") as f:
         f.write(json.dumps(r) + "\n")
 n, mins = len(rows), sum(r["duration_sec"] for r in rows) / 60
 print(f"  all.jsonl: {n} recordings, {mins:.1f} min")
-if n < 60:
-    print("  !! fewer than 60 recordings — expect a weak model. ~100+ is a good first batch.")
+if mins < 1:
+    print("  !! under a minute of speech — expect a weak model. The 5 quick-start passages are ~1-2 min.")
+open(f"{d}/count.txt", "w").write(str(n))
+open(f"{d}/language.txt", "w").write(rows[0].get("language", "en") if rows else "en")
 PY
+N=$(cat "$D/count.txt")
+LANG_CODE=$(cat "$D/language.txt")   # en or zh, from the app's export
+echo "  language: $LANG_CODE"
+# Separate model folders per language, so a Chinese model never reuses an
+# English one built for the same person (and vice versa).
+MSLUG="$SLUG"; [ "$LANG_CODE" = "zh" ] && MSLUG="${SLUG}_zh"
+R="eval_results/personal/$MSLUG"   # per language, so English results never overwrite Chinese ones
+# Tiny sets (quick start = 5 clips) give one optimizer step per epoch, so scale
+# epochs to reach ~60+ steps. LoRA's low rank and the divergence guard keep it
+# from simply memorizing.
+EPOCHS=$(python3 -c "import math; n=$N; print(max(10, min(80, math.ceil(60*16/max(n,1)))))")
+echo "  training for $EPOCHS epochs on $N recordings"
+# The held-out measurement needs enough clips to split; skip it for small sets.
+[ "$N" -lt 30 ] && SKIP_EVAL=1 && echo "  (fewer than 30 recordings: skipping the before/after measurement)"
+if [ "$EVAL_ONLY" = 1 ] && [ "$SKIP_EVAL" = 1 ]; then
+  echo "!! --eval-only needs 30+ recordings to hold some back for testing."; exit 1
+fi
 
 if [ "$SKIP_EVAL" = 0 ]; then
   echo "== 2/4  Measure (stock vs personal, on held-out recordings)"
   for T in test_seen test_unseen; do
     [ -s "$D/$T.jsonl" ] || continue
-    python3 scripts/eval_whisper.py --manifest "$D/$T.jsonl" --model small --guard \
+    python3 scripts/eval_whisper.py --manifest "$D/$T.jsonl" --model small --guard --language "$LANG_CODE" \
         --tag "stock-$T" --out "$R/stock_$T"
   done
-  [ -d "models/personalstock_$SLUG/merged" ] || \
+  [ -d "models/${MSLUG}_measure/merged" ] || \
     python3 scripts/finetune_lora.py --model openai/whisper-small --train "$D/train.jsonl" \
-        --out "models/personalstock_$SLUG" --epochs "$EPOCHS" --lr "$LR" --device cpu
+        --out "models/${MSLUG}_measure" --epochs "$EPOCHS" --lr "$LR" --augment --language "$LANG_CODE" --device "$DEVICE"
   for T in test_seen test_unseen; do
     [ -s "$D/$T.jsonl" ] || continue
-    python3 scripts/eval_whisper.py --manifest "$D/$T.jsonl" --backend transformers --guard \
-        --model "models/personalstock_$SLUG/merged" --tag "personalstock-$T" --out "$R/personalstock_$T"
+    python3 scripts/eval_whisper.py --manifest "$D/$T.jsonl" --backend transformers --guard --language "$LANG_CODE" \
+        --model "models/${MSLUG}_measure/merged" --tag "personalstock-$T" --out "$R/personalstock_$T"
   done
-  python3 scripts/compare_personal.py "$SLUG" | tee "$R/RESULTS.txt"
+  python3 scripts/compare_personal.py "$MSLUG" | tee "$R/RESULTS.txt"
 else
   echo "== 2/4  Measure: skipped"
 fi
+if [ "$EVAL_ONLY" = 1 ]; then
+  echo "Done (--eval-only). Results: $R/RESULTS.txt"
+  exit 0
+fi
 
 echo "== 3/4  Final model on all recordings"
-FINAL="models/personal_final_$SLUG"
+FINAL="models/${MSLUG}_final"
+[ -d "$FINAL" ] && [ ! -d "$FINAL/merged" ] && { echo "  previous final run was interrupted; starting it over"; rm -rf "$FINAL"; }
 [ -d "$FINAL/merged" ] || \
   python3 scripts/finetune_lora.py --model openai/whisper-small --train "$D/all.jsonl" \
-      --out "$FINAL" --epochs "$EPOCHS" --lr "$LR" --device cpu
+      --out "$FINAL" --epochs "$EPOCHS" --lr "$LR" --augment --language "$LANG_CODE" --device "$DEVICE"
 
 echo "== 4/4  Convert to WhisperKit (Core ML)"
 command -v xcrun >/dev/null && xcrun --find coremlcompiler >/dev/null 2>&1 || {
@@ -84,10 +119,10 @@ if ! command -v whisperkit-generate-model >/dev/null; then
 fi
 HF_USER=$(hf auth whoami 2>/dev/null | head -1 | awk '{print $NF}')
 HF_USER=${HF_USER:-JJaysz}
-REPO="$HF_USER/cohear-personal-$SLUG"
+REPO="$HF_USER/cohear-personal-$MSLUG"
 hf repo create "$REPO" --type model --private -y 2>/dev/null || true
 hf upload "$REPO" "$FINAL/merged" . --repo-type model
-OUT="models/whisperkit_personal/$SLUG"
+OUT="models/whisperkit_personal/$MSLUG"
 mkdir -p "$OUT"
 whisperkit-generate-model --model-version "$REPO" --output-dir "$OUT" || true   # validation step may fail offline; checked below
 VARIANT_DIR="$OUT/${REPO//\//_}"
@@ -98,25 +133,33 @@ PKG="$OUT/PersonalModel"
 rm -rf "$PKG"; mkdir -p "$PKG"
 cp -R "$VARIANT_DIR"/*.mlmodelc "$PKG"/
 cp "$FINAL/merged"/tokenizer*.json "$PKG"/ 2>/dev/null || true
-python3 - "$PKG" "$NAME" "$D/all.jsonl" <<'PY'
+python3 - "$PKG" "$NAME" "$D/all.jsonl" "$LANG_CODE" <<'PY'
 import json, sys, datetime
-pkg, name, allf = sys.argv[1:]
+pkg, name, allf, lang = sys.argv[1:]
 rows = [json.loads(l) for l in open(allf)]
-json.dump({"name": name, "clips": len(rows),
+json.dump({"name": name, "clips": len(rows), "language": lang,
            "minutes": round(sum(r["duration_sec"] for r in rows) / 60, 1),
            "built": datetime.date.today().isoformat(),
-           "recipe": "openai/whisper-small + LoRA r32 lr3e-4 10ep"},
-          open(f"{pkg}/personal.json", "w"), indent=2)
+           "recipe": "openai/whisper-small + LoRA r32 lr3e-4 + audio augmentation"},
+          open(f"{pkg}/personal.json", "w"), indent=2, ensure_ascii=False)
 PY
 if [ "$KEEP_REMOTE" = 0 ]; then
-  hf repo delete "$REPO" --repo-type model -y 2>/dev/null \
+  python3 -c "import sys; from huggingface_hub import delete_repo; delete_repo(sys.argv[1], repo_type='model')" "$REPO" 2>/dev/null \
     && echo "  deleted private repo $REPO" \
     || echo "  !! couldn't auto-delete $REPO — delete it at https://huggingface.co/$REPO/settings"
 fi
 
+# Zip for remote testers: they save it to Files, tap to unzip, then use
+# Teach CoHear your voice -> "Install personal model" in the app.
+ZIP="$OUT/PersonalModel-$MSLUG.zip"
+rm -f "$ZIP"; (cd "$OUT" && zip -qry "$(basename "$ZIP")" PersonalModel)
+
 cat <<EOF
 
 Done. Personal model for $NAME: $PKG  ($(du -sh "$PKG" | cut -f1))
+Zip for remote testers: $ZIP  ($(du -sh "$ZIP" | cut -f1)) — share via Google Drive or iCloud link (too big for email).
+  On their iPhone: open the link -> Save to Files -> tap the zip to unzip ->
+  CoHear -> Settings -> Teach CoHear your voice -> Install personal model -> pick "PersonalModel".
 
 Put it on the phone:
   1. Plug the iPhone into this Mac, open Finder, click the iPhone in the sidebar.

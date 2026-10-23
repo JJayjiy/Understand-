@@ -1,6 +1,32 @@
 import Foundation
 import Combine
 
+/// The two languages CoHear supports. Switching changes both the interface text
+/// and what the recognizer listens for. Kept in UserDefaults so non-view code
+/// (model titles, prompts, error messages) can read it without a reference to
+/// the store.
+enum AppLanguage: String, CaseIterable, Identifiable, Codable {
+    case en, zh
+    var id: String { rawValue }
+
+    static var current: AppLanguage {
+        AppLanguage(rawValue: UserDefaults.standard.string(forKey: "appLanguage") ?? "") ?? .en
+    }
+
+    /// Shown in the picker in its own language, so anyone can find theirs.
+    var nativeName: String { self == .zh ? "中文" : "English" }
+    /// Whisper language code.
+    var whisperCode: String { self == .zh ? "zh" : "en" }
+    /// Apple speech recognizer and text-to-speech locale.
+    var locale: String { self == .zh ? "zh-CN" : "en-US" }
+}
+
+/// Pick the string for the current language. Both versions sit side by side at
+/// the call site, so nothing goes missing when one is edited.
+func L(_ en: String, _ zh: String) -> String {
+    AppLanguage.current == .zh ? zh : en
+}
+
 /// App state. One conversation at a time, held in memory.
 ///
 /// Deliberately no persistence of transcripts across launches in v1. The product
@@ -43,6 +69,31 @@ final class SessionStore: ObservableObject {
         didSet { UserDefaults.standard.set(filterOtherVoices, forKey: "filterOtherVoices") }
     }
 
+    /// Interface and recognition language. Change it with `setLanguage(_:)`,
+    /// which also swaps to a model that understands that language.
+    @Published private(set) var language: AppLanguage {
+        didSet { UserDefaults.standard.set(language.rawValue, forKey: "appLanguage") }
+    }
+
+    /// Home screen: speak and see it written down, or tap ready-made phrases.
+    enum HomeMode: String { case talk, phrases }
+    @Published private(set) var homeMode: HomeMode {
+        didSet { UserDefaults.standard.set(homeMode.rawValue, forKey: "homeMode") }
+    }
+
+    func setHomeMode(_ mode: HomeMode) {
+        guard mode != homeMode else { return }
+        if isListening { stopListening() }
+        speaker.stop()
+        homeMode = mode
+    }
+
+    /// Whether the welcome screens have been seen. The model download waits
+    /// until then, so it fetches the model for the language the user picked.
+    @Published private(set) var hasOnboarded: Bool {
+        didSet { UserDefaults.standard.set(hasOnboarded, forKey: "hasOnboarded") }
+    }
+
     let recorder = AudioRecorder()
     let transcriber = Transcriber()
     let clarifier = Clarifier()
@@ -69,7 +120,18 @@ final class SessionStore: ObservableObject {
         clarifyEnabled = d.object(forKey: "clarifyEnabled") as? Bool ?? true
         filterOtherVoices = d.object(forKey: "filterOtherVoices") as? Bool ?? true
         showConfidence = d.object(forKey: "showConfidence") as? Bool ?? true
-        modelChoice = Transcriber.ModelChoice(rawValue: d.string(forKey: "modelChoice") ?? "") ?? .cohear
+        // Never start the app on large-v3: on a 6 GB iPhone it can exhaust memory
+        // (iOS kills the app), and if it's the saved choice the app would crash on
+        // every launch before the user can switch away. Large is a per-session
+        // experiment you pick in Settings; launch always falls back to CoHear.
+        language = AppLanguage.current
+        hasOnboarded = d.bool(forKey: "hasOnboarded")
+        homeMode = HomeMode(rawValue: d.string(forKey: "homeMode") ?? "") ?? .talk
+        let fallback = Transcriber.ModelChoice.defaultChoice
+        let saved = Transcriber.ModelChoice(rawValue: d.string(forKey: "modelChoice") ?? "") ?? fallback
+        // Also fall back if the saved model doesn't support the current language
+        // (e.g. CoHear, which only knows English).
+        modelChoice = (saved == .large || !Transcriber.ModelChoice.available.contains(saved)) ? fallback : saved
 
         // Every time the recorder finishes a speech segment, transcribe it.
         recorder.onSegment = { [weak self] samples in
@@ -94,8 +156,12 @@ final class SessionStore: ObservableObject {
 
     // MARK: - Model
 
+    /// Load on first use, or try again after a failure (the Try again button).
     func loadModelIfNeeded() async {
-        guard modelState == .notLoaded else { return }
+        switch modelState {
+        case .notLoaded, .failed: break
+        default: return
+        }
         await loadModel(modelChoice)
     }
 
@@ -107,26 +173,63 @@ final class SessionStore: ObservableObject {
         await loadModel(choice)
     }
 
+    /// Switch the whole app between English and Chinese. Stops listening, then
+    /// loads a model that understands the new language (keeping the current
+    /// one if it does, e.g. large-v3 or Apple dictation).
+    func setLanguage(_ new: AppLanguage) async {
+        guard new != language else { return }
+        if isListening { stopListening() }
+        speaker.stop()
+        language = new
+        statusMessage = ""
+        let choice = Transcriber.ModelChoice.available.contains(modelChoice)
+            ? modelChoice : Transcriber.ModelChoice.defaultChoice
+        modelChoice = choice
+        // During the welcome screens nothing is loaded yet: just remember the
+        // choice, and the first load will fetch the right model.
+        guard modelState != .notLoaded else { return }
+        await loadModel(choice)
+    }
+
+    /// End of the welcome screens: remember it, then start the model download.
+    func finishOnboarding() {
+        hasOnboarded = true
+        Task { await loadModelIfNeeded() }
+    }
+
+    /// A line the speaker typed instead of said. Treated as theirs and certain.
+    func addTyped(_ text: String) {
+        let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !t.isEmpty else { return }
+        var u = Utterance(raw: t)
+        u.voice = .own
+        u.voiceConfirmedByUser = true
+        utterances.append(u)
+    }
+
     private func loadModel(_ choice: Transcriber.ModelChoice) async {
         modelState = .loading
         do {
-            try await transcriber.load(choice) { [weak self] progress in
+            try await transcriber.load(choice, language: language) { [weak self] progress in
                 Task { @MainActor in self?.modelState = .downloading(progress) }
             }
             // The transcriber may have fallen back to stock small; reflect that
             // so Settings never claims a model that isn't running.
             if let actual = await transcriber.loadedChoice, actual != choice {
                 modelChoice = actual
-                statusMessage = "Couldn't load \(choice.title); using \(actual.title)."
+                statusMessage = L("Couldn't load \(choice.title); using \(actual.title).",
+                                  "无法加载\(choice.title)，改用\(actual.title)。")
             }
             modelState = .ready
         } catch {
             // A comparison model that won't load shouldn't strand the user on
-            // an error screen. Say what happened and go back to CoHear.
-            if choice != .cohear {
-                statusMessage = "\(choice.title) isn't available: \(error.localizedDescription)"
-                modelChoice = .cohear
-                await loadModel(.cohear)
+            // an error screen. Say what happened and go back to the default.
+            let fallback = Transcriber.ModelChoice.defaultChoice
+            if choice != fallback {
+                statusMessage = L("\(choice.title) isn't available: \(error.localizedDescription)",
+                                  "\(choice.title)暂时不可用：\(error.localizedDescription)")
+                modelChoice = fallback
+                await loadModel(fallback)
             } else {
                 modelState = .failed(error.localizedDescription)
             }
@@ -141,7 +244,7 @@ final class SessionStore: ObservableObject {
         do {
             try await recorder.start()
             isListening = true
-            statusMessage = "Listening"
+            statusMessage = L("Listening", "正在听")
         } catch {
             statusMessage = error.localizedDescription
         }
@@ -194,14 +297,14 @@ final class SessionStore: ObservableObject {
             }
 
             if clarifyEnabled, clarifier.isAvailable {
-                if let result = try? await clarifier.clarify(trimmed) {
+                if let result = try? await clarifier.clarify(trimmed, language: language) {
                     u.clean = result.clean
                     u.point = result.point
                 }
             }
             utterances.append(u)
         } catch {
-            statusMessage = "Couldn't transcribe that — try again."
+            statusMessage = L("Couldn't transcribe that — try again.", "没能识别这句话，请再试一次。")
         }
     }
 
@@ -261,7 +364,7 @@ final class SessionStore: ObservableObject {
     /// Everything the speaker said this session, in order, as they approved it.
     /// Other people's lines are left out — this is the speaker's transcript.
     var fullText: String {
-        visibleUtterances.map(\.text).joined(separator: " ")
+        visibleUtterances.map(\.text).joined(separator: language == .zh ? "" : " ")
     }
 }
 
@@ -273,6 +376,7 @@ extension SessionStore {
     /// the view never tries to download anything.
     static func preview(empty: Bool = false, listening: Bool = false) -> SessionStore {
         let s = SessionStore()
+        s.hasOnboarded = true
         s.modelState = .ready
         s.isListening = listening
         s.hearingSpeech = listening

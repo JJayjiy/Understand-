@@ -15,23 +15,31 @@ struct RootView: View {
         ZStack {
             Theme.canvas.ignoresSafeArea()
 
-            switch session.modelState {
-            case .ready:
-                mainContent
-            case .failed(let msg):
-                ModelSetupView(state: session.modelState, message: msg) {
-                    Task { await session.loadModelIfNeeded() }
-                }
-            default:
-                ModelSetupView(state: session.modelState, message: nil) {
-                    Task { await session.loadModelIfNeeded() }
+            if !session.hasOnboarded {
+                WelcomeView()
+                    .transition(.opacity)
+            } else {
+                switch session.modelState {
+                case .ready:
+                    mainContent
+                case .failed(let msg):
+                    ModelSetupView(state: session.modelState, message: msg) {
+                        Task { await session.loadModelIfNeeded() }
+                    }
+                default:
+                    ModelSetupView(state: session.modelState, message: nil) {
+                        Task { await session.loadModelIfNeeded() }
+                    }
                 }
             }
         }
-        .sheet(isPresented: $showingSettings) { SettingsView() }
-        .fullScreenCover(isPresented: $showingShow) { ShowView() }
-        .sheet(item: $editing) { u in EditView(utterance: u) }
-        .task { await session.loadModelIfNeeded() }
+        .animation(.easeInOut(duration: 0.35), value: session.hasOnboarded)
+        .sheet(isPresented: $showingSettings) { SettingsView().environmentObject(session) }
+        .fullScreenCover(isPresented: $showingShow) { ShowView().environmentObject(session) }
+        .sheet(item: $editing) { u in EditView(utterance: u).environmentObject(session) }
+        // The first download waits for the welcome screens, so it fetches the
+        // model for the language the user picks there.
+        .task { if session.hasOnboarded { await session.loadModelIfNeeded() } }
     }
 
     // MARK: - Layout
@@ -39,18 +47,41 @@ struct RootView: View {
     private var mainContent: some View {
         VStack(spacing: 0) {
             header
-            transcript
-            controls
+            modeSwitch
+            switch session.homeMode {
+            case .talk:
+                transcript
+                controls
+            case .phrases:
+                // AAC-style board: tap a phrase, it's said out loud at once.
+                QuickPhrasesView()
+                    .padding(.top, 12)
+            }
         }
+        // Rebuild everything when the language changes, so child views that
+        // don't observe the store (buttons, pills) pick up the new strings.
+        .id(session.language)
     }
 
     private var header: some View {
         HStack {
-            HStack(spacing: 8) {
+            HStack(spacing: 10) {
                 Image(systemName: "waveform")
                     .font(.system(size: 24, weight: .bold))
                     .foregroundStyle(Theme.brand)
-                Text("CoHear").font(Theme.wordmark())
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("CoHear").font(Theme.wordmark()).lineLimit(1).fixedSize()
+                    // Which model is listening, always visible: nobody should
+                    // mistake stock Whisper's output for their personal model.
+                    Button { showingSettings = true } label: {
+                        Text(session.modelChoice.title)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(L("Speech model: ", "语音模型：") + session.modelChoice.title)
+                }
             }
             Spacer()
             statusPill
@@ -61,20 +92,49 @@ struct RootView: View {
                     .frame(width: Theme.minTarget, height: Theme.minTarget)
             }
             .buttonStyle(PressStyle())
-            .accessibilityLabel("Settings")
+            .accessibilityLabel(L("Settings", "设置"))
         }
         .padding(.horizontal, Theme.spacing)
         .padding(.top, 8)
     }
 
+    /// Two big tabs: speak and have it written down, or tap ready-made phrases.
+    private var modeSwitch: some View {
+        HStack(spacing: 8) {
+            modeTab(.talk, L("Talk", "说话"), "waveform")
+            modeTab(.phrases, L("Phrases", "常用语"), "square.grid.2x2.fill")
+        }
+        .padding(5)
+        .background(Capsule().fill(Color.primary.opacity(0.06)))
+        .padding(.horizontal, Theme.spacing)
+        .padding(.top, 8)
+    }
+
+    private func modeTab(_ mode: SessionStore.HomeMode, _ title: String, _ icon: String) -> some View {
+        let selected = session.homeMode == mode
+        return Button {
+            withAnimation(.easeInOut(duration: 0.25)) { session.setHomeMode(mode) }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: icon).font(.system(size: 20, weight: .semibold))
+                Text(title).font(.system(size: 20, weight: .semibold, design: .rounded))
+            }
+            .foregroundStyle(selected ? .white : .primary)
+            .frame(maxWidth: .infinity, minHeight: 54)
+            .background(Capsule().fill(selected ? AnyShapeStyle(Theme.brand) : AnyShapeStyle(Color.clear)))
+        }
+        .buttonStyle(PressStyle())
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
     @ViewBuilder
     private var statusPill: some View {
         if session.isListening {
-            StatusPill(text: session.hearingSpeech ? "Hearing you" : "Listening",
+            StatusPill(text: session.hearingSpeech ? L("Hearing you", "听到了") : L("Listening", "正在听"),
                        color: session.hearingSpeech ? Theme.live : Theme.blue,
                        active: true)
         } else if session.isTranscribing {
-            StatusPill(text: "Working", color: Theme.teal, active: true)
+            StatusPill(text: L("Working", "识别中"), color: Theme.teal, active: true)
         }
     }
 
@@ -119,18 +179,39 @@ struct RootView: View {
     }
 
     private var emptyState: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Say something.")
+        VStack(alignment: .leading, spacing: 18) {
+            Text(L("Say something.", "说点什么吧。"))
                 .font(.system(size: 34, weight: .bold, design: .rounded))
                 .foregroundStyle(Theme.brand)
-            Text("Tap Listen, talk, and pause. What you said shows up here — just for you — until you decide to show it.")
-                .font(Theme.body(session.textScale))
+            VStack(alignment: .leading, spacing: 14) {
+                emptyStep(1, L("Tap Listen and talk.", "点“听”，然后说话。"))
+                emptyStep(2, L("Pause. Your words show up here, just for you.", "停一下。你的话会出现在这里，只有你能看到。"))
+                emptyStep(3, L("Tap Show or Speak to share them.", "点“展示”或“朗读”分享给别人。"))
+            }
+            Text(L("Hard to get the words out? Switch to Phrases: tap one and it's said out loud, or type your own.",
+                   "说不出来？切换到“常用语”：点一下就会读出来，也可以自己打字。"))
+                .font(Theme.label())
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.top, 36)
-        .padding(.horizontal, 4)
+        .padding(22)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: Theme.cornerRadius).fill(Theme.card))
+        .padding(.top, 24)
         .accessibilityElement(children: .combine)
+    }
+
+    private func emptyStep(_ n: Int, _ text: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 14) {
+            Text("\(n)")
+                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+                .frame(width: 32, height: 32)
+                .background(Circle().fill(Theme.brand))
+            Text(text)
+                .font(Theme.body(min(session.textScale, 1.3)))
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     private var controls: some View {
@@ -138,12 +219,12 @@ struct RootView: View {
             // Show and Speak are always present — disabled when empty — so the
             // layout never jumps. Stable targets matter for a hand that can't aim.
             HStack(spacing: 12) {
-                PillButton(title: "Show", systemImage: "rectangle.portrait.and.arrow.forward",
+                PillButton(title: L("Show", "展示"), systemImage: "rectangle.portrait.and.arrow.forward",
                            tint: Theme.teal, filled: true,
                            enabled: !session.visibleUtterances.isEmpty) {
                     showingShow = true
                 }
-                PillButton(title: session.speaker.isSpeaking ? "Stop" : "Speak",
+                PillButton(title: session.speaker.isSpeaking ? L("Stop", "停止") : L("Speak", "朗读"),
                            systemImage: session.speaker.isSpeaking ? "stop.fill" : "speaker.wave.2.fill",
                            tint: Theme.blue, filled: false,
                            enabled: !session.visibleUtterances.isEmpty || session.speaker.isSpeaking) {
@@ -203,7 +284,7 @@ struct UtteranceRow: View {
                         .multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
                     if lowConf && !dimmed {
-                        Label("Not sure it heard this right — tap to fix", systemImage: "questionmark.circle")
+                        Label(L("Not sure it heard this right — tap to fix", "可能没听准，点这里修改"), systemImage: "questionmark.circle")
                             .font(Theme.label())
                             .foregroundStyle(Theme.warn)
                     }
@@ -222,7 +303,7 @@ struct UtteranceRow: View {
 
             if dimmed || unsure {
                 Button(action: onClaim) {
-                    Label("This was me", systemImage: "person.fill.checkmark")
+                    Label(L("This was me", "这是我说的"), systemImage: "person.fill.checkmark")
                         .font(Theme.label())
                         .foregroundStyle(Theme.blue)
                         .frame(maxWidth: .infinity, minHeight: Theme.minTarget)
@@ -255,7 +336,7 @@ struct UtteranceRow: View {
         }
         .overlay(alignment: .topTrailing) {
             if dimmed || unsure {
-                Text(dimmed ? "not you" : "not your voice?")
+                Text(dimmed ? L("not you", "不是你") : L("not your voice?", "不是你的声音？"))
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 10).padding(.vertical, 5)
@@ -264,8 +345,8 @@ struct UtteranceRow: View {
             }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(dimmed ? "Someone else: \(utterance.text)"
-                            : lowConf ? "Uncertain: \(utterance.text)" : utterance.text)
+        .accessibilityLabel(dimmed ? L("Someone else: ", "别人说的：") + utterance.text
+                            : lowConf ? L("Uncertain: ", "不确定：") + utterance.text : utterance.text)
     }
 }
 

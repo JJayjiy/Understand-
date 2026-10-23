@@ -38,7 +38,9 @@ from pathlib import Path
 
 
 def norm(t: str) -> str:
-    return re.sub(r"\s+", " ", re.sub(r"[^a-z' ]", " ", t.lower())).strip()
+    # Keep Chinese characters too, or every Chinese phrase would normalise to ""
+    # and the seen/unseen split would collapse into one group.
+    return re.sub(r"\s+", " ", re.sub(r"[^a-z'\u4e00-\u9fff ]", " ", t.lower())).strip()
 
 
 def load_export(src: Path, name: str):
@@ -58,22 +60,37 @@ def load_export(src: Path, name: str):
     man = next(dest.rglob("manifest.jsonl"), None)
     if not man:
         raise SystemExit(f"no manifest.jsonl inside {src} — is this a CoHear export?")
+    # The export holds recordings in both languages; train only on the one
+    # the user exported in (meta.json "language", default English).
+    meta_p = man.parent / "meta.json"
+    lang = json.load(open(meta_p)).get("language", "en") if meta_p.exists() else "en"
     rows = []
-    for line in open(man):
+    skipped_lang = 0
+    for line in open(man, encoding="utf-8"):
         if not line.strip():
             continue
         s = json.loads(line)
+        if (s.get("lang") or "en") != lang:
+            skipped_lang += 1
+            continue
         wav = (man.parent / s["file"]).resolve()
         if not wav.exists():
+            continue
+        if float(s.get("durationSec", 0)) > 30.0:
+            print(f"  skipping {s['file']}: {s['durationSec']:.1f}s is over Whisper's 30 s window")
             continue
         text = s["text"].strip()
         rows.append({
             "audio_path": str(wav), "text": text, "speaker": name,
             "group": "dysarthric", "severity": "unknown", "session": "app",
             "utt_id": f"{name}_{s['id'][:8]}", "mic": "iphone",
-            "duration_sec": float(s.get("durationSec", 0)), "n_words": len(text.split()),
+            "duration_sec": float(s.get("durationSec", 0)),
+            # Chinese has no spaces: count characters as "words".
+            "n_words": len(re.findall(r"[\u4e00-\u9fff]", text)) if lang == "zh" else len(text.split()),
+            "language": lang,
         })
-    print(f"loaded {len(rows)} recordings from {man.parent}")
+    print(f"loaded {len(rows)} {lang} recordings from {man.parent}"
+          + (f" (ignored {skipped_lang} in the other language)" if skipped_lang else ""))
     return rows
 
 

@@ -30,7 +30,7 @@ struct ShowView: View {
                                 .lineSpacing(6)
                                 .fixedSize(horizontal: false, vertical: true)
                             if low {
-                                Label("might not be right", systemImage: "questionmark.circle")
+                                Label(L("might not be right", "可能不准确"), systemImage: "questionmark.circle")
                                     .font(Theme.label())
                                     .foregroundStyle(Theme.warn)
                             }
@@ -52,7 +52,7 @@ struct ShowView: View {
             }
             .buttonStyle(PressStyle())
             .padding(16)
-            .accessibilityLabel("Close")
+            .accessibilityLabel(L("Close", "关闭"))
         }
         .preferredColorScheme(.dark)
         // Keep the screen awake while it's being read. Nothing here times out.

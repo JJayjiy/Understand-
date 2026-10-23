@@ -185,8 +185,10 @@ final class AudioRecorder {
         case permissionDenied, formatUnavailable
         var errorDescription: String? {
             switch self {
-            case .permissionDenied: return "CoHear needs the microphone to hear you. Enable it in Settings."
-            case .formatUnavailable: return "This device's microphone format isn't supported."
+            case .permissionDenied: return L("CoHear needs the microphone to hear you. Enable it in Settings.",
+                                             "CoHear 需要麦克风才能听到你。请在系统设置中打开。")
+            case .formatUnavailable: return L("This device's microphone format isn't supported.",
+                                              "不支持这台设备的麦克风格式。")
             }
         }
     }

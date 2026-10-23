@@ -23,7 +23,7 @@ struct ModelSetupView: View {
             }
                 .accessibilityHidden(true)
 
-            Text("Setting up CoHear")
+            Text(L("Setting up CoHear", "正在准备 CoHear"))
                 .font(.system(size: 32, weight: .bold, design: .rounded))
 
             switch state {
@@ -33,7 +33,7 @@ struct ModelSetupView: View {
                         .progressViewStyle(.linear)
                         .tint(Theme.teal)
                         .frame(maxWidth: 320)
-                    Text("Downloading the speech model — \(Int(p * 100))%")
+                    Text(L("Downloading the speech model — ", "正在下载语音模型 — ") + "\(Int(p * 100))%")
                         .font(Theme.label())
                         .foregroundStyle(.secondary)
                 }
@@ -41,24 +41,25 @@ struct ModelSetupView: View {
             case .loading, .notLoaded:
                 VStack(spacing: 12) {
                     ProgressView()
-                    Text("Getting ready…")
+                    Text(L("Getting ready…", "准备中…"))
                         .font(Theme.label())
                         .foregroundStyle(.secondary)
                 }
             case .failed:
                 VStack(spacing: 16) {
-                    Text(message ?? "Something went wrong.")
+                    Text(message ?? L("Something went wrong.", "出了点问题。"))
                         .font(Theme.label())
                         .foregroundStyle(Theme.stop)
                         .multilineTextAlignment(.center)
-                    PillButton(title: "Try again", systemImage: "arrow.clockwise", tint: Theme.blue) { retry() }
+                    PillButton(title: L("Try again", "重试"), systemImage: "arrow.clockwise", tint: Theme.blue) { retry() }
                         .frame(maxWidth: 320)
                 }
             case .ready:
                 EmptyView()
             }
 
-            Text("This happens once. After it's done, everything runs on your phone — your voice never leaves it.")
+            Text(L("This happens once. After it's done, everything runs on your phone — your voice never leaves it.",
+                   "只需要一次。完成后一切都在你的手机上运行，你的声音不会离开手机。"))
                 .font(Theme.label())
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

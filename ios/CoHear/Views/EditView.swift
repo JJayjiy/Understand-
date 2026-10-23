@@ -23,17 +23,17 @@ struct EditView: View {
                     .scrollContentBackground(.hidden)
                     .background(Theme.card, in: RoundedRectangle(cornerRadius: Theme.cornerRadius))
                     .focused($focused)
-                    .accessibilityLabel("Edit what you said")
+                    .accessibilityLabel(L("Edit what you said", "修改你说的话"))
 
                 if utterance.isClarified, utterance.edited == nil {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Originally heard as")
+                        Text(L("Originally heard as", "原本听到的是"))
                             .font(Theme.label()).foregroundStyle(.secondary)
                         Text(utterance.raw)
                             .font(Theme.label())
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
-                        Button("Use the original instead") { text = utterance.raw }
+                        Button(L("Use the original instead", "改用原文")) { text = utterance.raw }
                             .font(Theme.label())
                             .frame(minHeight: Theme.minTarget)
                     }
@@ -42,40 +42,40 @@ struct EditView: View {
 
                 Spacer(minLength: 0)
 
-                PillButton(title: "Save", systemImage: "checkmark", tint: Theme.blue, filled: true) {
+                PillButton(title: L("Save", "保存"), systemImage: "checkmark", tint: Theme.blue, filled: true) {
                     session.update(utterance.id, text: text)
                     dismiss()
                 }
 
                 HStack(spacing: 12) {
                     if session.filterOtherVoices, utterance.voice != .other {
-                        PillButton(title: "Not me", systemImage: "person.2", tint: Theme.teal, filled: false) {
+                        PillButton(title: L("Not me", "不是我"), systemImage: "person.2", tint: Theme.teal, filled: false) {
                             session.setOwnVoice(utterance.id, isOwn: false)
                             dismiss()
                         }
                     }
-                    PillButton(title: "Delete", systemImage: "trash", tint: Theme.stop, filled: false) {
+                    PillButton(title: L("Delete", "删除"), systemImage: "trash", tint: Theme.stop, filled: false) {
                         confirmingDelete = true
                     }
                 }
             }
             .padding(Theme.spacing)
             .background(Theme.canvas.ignoresSafeArea())
-            .navigationTitle("Edit this line")
+            .navigationTitle(L("Edit this line", "修改这一句"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button(L("Cancel", "取消")) { dismiss() }
                         .font(Theme.label())
                         .frame(minHeight: Theme.minTarget)
                 }
             }
-            .confirmationDialog("Delete this?", isPresented: $confirmingDelete, titleVisibility: .visible) {
-                Button("Delete", role: .destructive) {
+            .confirmationDialog(L("Delete this?", "删除这一句？"), isPresented: $confirmingDelete, titleVisibility: .visible) {
+                Button(L("Delete", "删除"), role: .destructive) {
                     session.delete(utterance.id)
                     dismiss()
                 }
-                Button("Keep it", role: .cancel) {}
+                Button(L("Keep it", "保留"), role: .cancel) {}
             }
             .onAppear {
                 text = utterance.text

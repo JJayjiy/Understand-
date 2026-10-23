@@ -27,6 +27,8 @@ checkpoints/
 # maintainers' approval to publish adapter weights was explicitly conditioned
 # on not including any of this. 15GB, ~25k files.
 TORGO_datasets/
+# TORGO audio repackaged as stand-in app exports + demo clips (scripts/torgo_to_export.py)
+exports/
 *.tar.bz2
 *.tar.gz
 *.zip

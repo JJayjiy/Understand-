@@ -70,15 +70,66 @@ def load_audio(path, target_sr=16000):
     return audio
 
 
-def encode_example(row, processor, max_label_len=448):
+def augment_audio(audio, sr=16000, rng=None):
+    """Make one clip sound like it was recorded somewhere else.
+
+    Why: a personal model trained on ~200 clean head-mic clips worked on clean
+    files but fell apart when the same clips were played through a laptop
+    speaker into an iPhone mic. Randomly varying the recording conditions each
+    epoch teaches the model the VOICE rather than the microphone. Numpy only.
+    About 20% of the time the clip is left clean.
+    """
+    import numpy as np
+    rng = rng or np.random.default_rng()
+    x = audio.astype(np.float32).copy()
+    if rng.random() < 0.2 or len(x) < sr // 10:
+        return x
+    n = len(x)
+    # 1. Loudness: quiet speaker / phone held farther away, or louder.
+    x *= 10 ** (rng.uniform(-12, 6) / 20)
+    # 2. Room echo: synthetic impulse response (decaying noise), RT60 0.15-0.6 s.
+    if rng.random() < 0.6:
+        rt60 = rng.uniform(0.15, 0.6)
+        L = int(sr * rt60)
+        t = np.arange(L) / sr
+        ir = rng.standard_normal(L).astype(np.float32) * np.exp(-6.9 * t / rt60)
+        ir[0] = 1.0
+        ir /= np.sqrt(np.sum(ir ** 2))
+        m = 1 << int(np.ceil(np.log2(n + L)))
+        wet = np.fft.irfft(np.fft.rfft(x, m) * np.fft.rfft(ir, m), m)[:n].astype(np.float32)
+        mix = rng.uniform(0.3, 0.8)
+        x = (1 - mix) * x + mix * wet
+    # 3. Device colouring: band-limit like a laptop speaker / phone mic.
+    if rng.random() < 0.6:
+        X = np.fft.rfft(x)
+        f = np.fft.rfftfreq(n, 1 / sr)
+        lo, hi = rng.uniform(80, 400), rng.uniform(3400, 7500)
+        mask = 1 / (1 + (lo / np.maximum(f, 1)) ** 4) / (1 + (f / hi) ** 4)
+        x = np.fft.irfft(X * mask, n).astype(np.float32)
+    # 4. Background noise at 8-30 dB SNR (white or pink-ish).
+    if rng.random() < 0.6:
+        noise = rng.standard_normal(n).astype(np.float32)
+        if rng.random() < 0.5:
+            N = np.fft.rfft(noise)
+            N /= np.sqrt(np.maximum(np.fft.rfftfreq(n, 1 / sr), 20))
+            noise = np.fft.irfft(N, n).astype(np.float32)
+        snr = rng.uniform(8, 30)
+        ps, pn = np.mean(x ** 2) + 1e-9, np.mean(noise ** 2) + 1e-9
+        x = x + noise * np.sqrt(ps / (pn * 10 ** (snr / 10)))
+    return np.clip(x, -1.0, 1.0)
+
+
+def encode_example(row, processor, max_label_len=448, augment=False):
     """One manifest row -> the tensors Whisper trains on."""
     audio = load_audio(row["audio_path"])
+    if augment:
+        audio = augment_audio(audio)
     feats = processor.feature_extractor(audio, sampling_rate=16000).input_features[0]
     labels = processor.tokenizer(row["text"]).input_ids[:max_label_len]
     return {"input_features": feats, "labels": labels}
 
 
-def build_dataset(rows, processor, max_label_len=448):
+def build_dataset(rows, processor, max_label_len=448, augment=False):
     """Torch Dataset wrapper around encode_example."""
     import torch
 
@@ -87,7 +138,8 @@ def build_dataset(rows, processor, max_label_len=448):
             return len(rows)
 
         def __getitem__(self, i):
-            return encode_example(rows[i], processor, max_label_len)
+            # Re-encoded every epoch, so augmentation differs each pass.
+            return encode_example(rows[i], processor, max_label_len, augment)
 
     return TorgoDataset()
 
@@ -145,6 +197,11 @@ def main():
     ap.add_argument("--device", default="auto", choices=["auto", "cpu", "mps", "cuda"],
                     help="auto picks the fastest available. Use cpu on Apple Silicon for long "
                          "runs — mps is faster at first but leaks memory and collapses after ~1 epoch.")
+    ap.add_argument("--augment", action="store_true",
+                    help="randomise recording conditions each epoch (echo, noise, mic colouring) — "
+                         "makes personal models robust to a different phone/room/speaker")
+    ap.add_argument("--language", default="en", choices=["en", "zh"],
+                    help="language of the training transcripts (zh = Mandarin, Simplified characters)")
     ap.add_argument("--seed", type=int, default=13)
     args = ap.parse_args()
 
@@ -192,7 +249,11 @@ def main():
               "we're only checking it runs")
     print()
 
-    processor = WhisperProcessor.from_pretrained(args.model, language="english", task="transcribe")
+    # The language token is part of every training label (<|en|> or <|zh|>),
+    # so the model learns to transcribe in the language the app will force.
+    lang_name = "chinese" if args.language == "zh" else "english"
+    print(f"  language   : {lang_name}")
+    processor = WhisperProcessor.from_pretrained(args.model, language=lang_name, task="transcribe")
 
     load_kw = {}
     if args.int8:
@@ -225,7 +286,9 @@ def main():
     print(f"  trainable  : {trainable:,} / {total:,}  ({100 * trainable / total:.3f}%)")
     print()
 
-    ds = build_dataset(rows, processor)
+    ds = build_dataset(rows, processor, augment=args.augment)
+    if args.augment:
+        print("  augment    : on (random gain, room echo, device band-limit, background noise)")
     collator = Collator(processor)
 
     out = Path(args.out).expanduser()
@@ -366,6 +429,8 @@ def main():
         "best_epoch": guard.best_epoch,
         "loss_history": guard.history,
         "smoke_test": args.smoke_test,
+        "augment": args.augment,
+        "language": args.language,
     }
     (out / "train_log.json").write_text(json.dumps(log, indent=2))
 
