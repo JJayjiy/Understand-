@@ -1,135 +1,99 @@
-# Cohear
+# CoHear
 
-**Understand people who are hard to understand.**
+**Helping people with atypical speech be understood.**
 
-*co- (together) + hear — and a homophone of cohere: to hold together, to make coherent.*
+CoHear is a free iPhone app for people with **dysarthria**: slurred or hard-to-follow speech caused by stroke, ALS, Parkinson's, or cerebral palsy. You talk, CoHear writes down what you said (privately, so you can check it first), and then the phone reads it aloud or shows it in big letters. It can also learn one person's voice, which is where most of the accuracy comes from.
 
-A tool that takes speech that's hard to parse — atypical speech, stutters, heavy accents, or rambling/indirect speech — and makes it understandable: a clean transcript, the speaker's actual point in one sentence, and optional clear audio playback.
+Everything runs on the phone. No account, no server, nothing uploaded.
 
-Not language-to-language translation. **Hard-speech → clear-speech, within a language.**
-
----
-
-## Why
-
-People with atypical speech get talked over, misheard, and left out — not because they have nothing to say, but because listeners can't parse it. Mainstream speech recognition (Siri, YouTube captions, stock Whisper) is trained mostly on typical speech and fails exactly where it's needed most.
-
-This project started from three real situations:
-
-- Students with special needs whose speech isn't understood by the people around them
-- An elderly grandmother whose point gets lost, which turns into family conflict
-- Same-language accents that are genuinely hard to follow
-
-All three are the same underlying problem: **systematic differences between what a speaker produces and what a listener expects.**
+Built by Jingyu (Nick) Lei, Archbishop Mitty High School, for the 2026 Congressional App Challenge (CA-17).
 
 ---
+
+## What it does
+
+| | |
+|---|---|
+| **Talk** | Tap one big Listen button and speak. Each sentence appears as a chat bubble. Tap a bubble to hear it read aloud; tap **Show** to display it in large text for the listener. |
+| **You / Them** | Your lines appear on the left, the other person's on the right, so a conversation reads like a chat. One tap corrects a wrong guess. |
+| **Phrases board** | An AAC-style board for when words won't come: one tap on "I need help," "Water, please," or your own phrases and the phone says it immediately. |
+| **Teach CoHear your voice** | Record 32 short everyday phrases (about 5–10 minutes), designed to cover every English sound. A **Hear it** button reads each phrase aloud so users can repeat instead of read. The recordings train a personal model. |
+| **Honest about uncertainty** | When the model is guessing, the line is marked "Not sure it heard this right" instead of being shown as fact. |
+| **English and Mandarin** | Full Chinese interface and Mandarin recognition, added for my first tester. |
+
+## Why personalization
+
+My first model was OpenAI's Whisper fine-tuned on the TORGO dysarthria dataset. On my first test it cut errors from 84% to 35%, until a real person with dysarthria tried the app and it understood almost nothing. I found that **98% of my test sentences also appeared in training**: the model had memorized sentences, not learned speech.
+
+After rebuilding the evaluation so every test used unseen speakers and unseen sentences, a general model barely helped a new person (97% → 85% word error). But dysarthric speech, while very different between people, is **consistent within one person**. So CoHear trains a small personal add-on per user:
+
+| Four TORGO speakers, sentences they never recorded | Words correct |
+|---|---|
+| Stock Whisper | 21% |
+| Personal model (LoRA, ~15 min of that person's speech) | **47%** |
 
 ## How it works
 
 ```
-audio
-  │
-  ├─ Stage 1: HEAR IT RIGHT     Whisper → transcript
-  │            + custom vocabulary bias
-  │            + per-speaker correction memory
-  │
-  ├─ Stage 2: GET THE POINT     LLM → clean text + one-sentence intent
-  │
-  └─ optional: speak the clean version back
+iPhone (Swift / SwiftUI)                          Mac (Python)
+────────────────────────                          ─────────────
+mic → voice activity detection                    app export (WAV + transcripts)
+    → Whisper on Core ML (WhisperKit)                 → LoRA fine-tune of whisper-small
+    → confidence + repetition guards                    (r=32, ~3.5M params, 1.4% of the model,
+    → You/Them voice check                               audio augmentation, divergence guard)
+    → bubbles · Show · Speak                          → merge → Core ML conversion
+                                                      → PersonalModel folder → AirDrop → app
 ```
 
-**Planned Stage 1.5 — the phonological layer.** Phoneme-level (IPA) recognition to build a per-speaker profile of systematic sound substitutions. The key idea: word-level corrections scale with your vocabulary (tens of thousands of entries, no generalization), while phoneme rules scale with the alphabet (~44 English phonemes, and one rule fixes thousands of unseen words). See [`docs/phonological-layer.md`](docs/phonological-layer.md).
+- **Model:** `openai/whisper-small` + LoRA on the attention query/value projections.
+- **On-device:** converted with WhisperKit tools; runs on the iPhone's Neural Engine.
+- **Robustness:** training adds random noise, echo, and phone-speaker muffling so the model learns the voice, not the microphone.
+- **Mandarin:** language forced (Whisper often misidentifies dysarthric speech), output converted to Simplified characters, scored by character error rate.
 
----
+## Repository
 
-## Quick start
+```
+ios/                 iPhone app (SwiftUI). Generate the project with XcodeGen.
+  CoHear/Views/        Home, Phrases board, Teach, Settings, Welcome, Show
+  CoHear/Services/     Transcriber (WhisperKit), recorder, voice check, personal model
+scripts/
+  finetune_lora.py     LoRA fine-tuning (augmentation, divergence guard)
+  eval_whisper.py      WER / CER evaluation
+  make_loso_split.py   leave-one-speaker-out, text-disjoint splits (the data-leak fix)
+  build_personal_model.sh   app export → personal model → Core ML package
+docs/                support and privacy pages (GitHub Pages)
+results/             evaluation summaries
+```
+
+### Build the app
 
 ```bash
-git clone <this-repo>
-cd understand
-python -m venv .venv && source .venv/bin/activate
+brew install xcodegen
+cd ios && xcodegen generate && open CoHear.xcodeproj
+```
+
+### Build a personal model from an app export
+
+```bash
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-export OPENAI_API_KEY=sk-...        # or paste it in the app sidebar
-streamlit run app.py
+bash scripts/build_personal_model.sh <name> <export.zip>          # add --skip-eval for small sets
 ```
 
-Opens at http://localhost:8501.
+## Privacy
 
-### Two transcription engines
+Speech recognition runs entirely on the iPhone. Recordings from "Teach CoHear your voice" stay on the phone unless the user chooses to export them. Personal models are built on a local computer, with the person's consent. No TORGO audio or participant recordings are included in this repository. [Privacy policy](https://jjayjiy.github.io/Understand-/privacy.html)
 
-| Engine | Cost | Notes |
-|---|---|---|
-| **OpenAI API** | ~$0.006/min | Fastest to start. Needs a key. |
-| **Local (free)** | $0 | Runs on your computer, offline, no key. `pip install faster-whisper`. First run downloads the model. |
+## How I used AI
 
-Stage 2 (clarify) uses the API either way. Model names are constants at the top of `app.py` — swap freely.
+I used AI coding assistants (mainly Claude) to write much of the Swift and Python code from my descriptions, explain concepts, and help edit writing. I came up with the idea, made the design decisions, ran every training and evaluation run, tested every build on my iPhone, ran the sessions with my tester, and handled the App Store submission. Details are in my Congressional App Challenge submission.
 
----
+## Credits
 
-## The tabs
+- **TORGO database** (University of Toronto): F. Rudzicz, A. K. Namasivayam, T. Wolff, "The TORGO database of acoustic and articulatory speech from speakers with dysarthria," *Language Resources and Evaluation*, 2012. Used for research only; not redistributed.
+- **OpenAI Whisper**, **Argmax WhisperKit**, **Hugging Face Transformers / PEFT**.
+- My first tester and her family, and the researchers who answered my emails.
 
-- **Clarify** — the core loop. Record or upload → the point, plus raw vs. clarified side by side → speak it back.
-- **Personalize** — correction memory + custom vocabulary. Lightweight per-speaker personalization, no training required.
-- **Measure WER** — paste what the speaker actually meant, get baseline vs. Cohear word error rate. **This delta is the headline metric.**
+CoHear is a research tool, not a medical device.
 
----
-
-## Roadmap
-
-- [x] v0 — working pipeline, two engines, WER measurement
-- [ ] Session logging + training-dataset export
-- [ ] LoRA fine-tuning on atypical speech ([`docs/data-and-finetuning.md`](docs/data-and-finetuning.md))
-- [ ] Per-speaker model adaptation — the real moat
-- [ ] Phonological (IPA) layer ([`docs/phonological-layer.md`](docs/phonological-layer.md))
-- [ ] Earbuds + phone: near-real-time listener-side clarification
-- [ ] Purpose-built device for users who can't use phones (one big button, status light, mic array)
-
----
-
-## Privacy & ethics — read before collecting anything
-
-This project involves **vulnerable populations**: people with disabilities, minors, and elderly speakers.
-
-- **Written consent before any recording.** Parental consent for minors. Template: [`docs/consent-form.md`](docs/consent-form.md)
-- **Speaker codes, never names** (`S01`, `S02`…).
-- **Never commit** audio, transcripts, consent forms, or `.env`. The `.gitignore` covers these — don't override it.
-- **Data minimization.** Store only what's needed; let people delete their data.
-- With the OpenAI engine, audio is sent to OpenAI. With the local engine, it stays on the machine.
-
----
-
-## Repo layout
-
-```
-app.py                        research app (Streamlit) — three engines side by side
-scripts/
-  torgo_prep.py               build train/test manifests from TORGO
-  finetune_lora.py            LoRA fine-tuning (laptop CPU, ~2.5h)
-  eval_whisper.py             WER / single-word accuracy
-  phone_calibration.py        control-calibrated phone deviation (.PHN based)
-  convert_whisperkit.sh       export merged model to Core ML for iOS
-results/                      measured numbers + write-ups (PHONE_CALIBRATION, LAYER_DECISION)
-release/                      model card + release guide (HF: JJaysz/cohear-whisper-small-dysarthric)
-space/                        Hugging Face Space demo (huggingface.co/spaces/JJaysz/cohear)
-ios/                          native iPhone app — on-device, App Store bound
-  CoHear/                     SwiftUI source
-  BUILD.md                    Xcode steps
-  APP_STORE_CHECKLIST.md      guideline-by-guideline
-outreach/                     research write-up, one-pagers, email drafts
-docs/                         plans and specs
-```
-
----
-
-## Team
-
-- **Nick** — pipeline, app, fine-tuning, hardware, outreach
-- **[Friend]** — linguistics: phonological layer, intent extraction, error analysis
-
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) for how we split work.
-
----
-
-## License
-
-MIT — see [`LICENSE`](LICENSE).
+MIT License.
