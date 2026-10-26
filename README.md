@@ -6,7 +6,7 @@ CoHear is a free iPhone app for people with **dysarthria**: slurred or hard-to-f
 
 Everything runs on the phone. No account, no server, nothing uploaded.
 
-Built by Jingyu (Nick) Lei, Archbishop Mitty High School, for the 2026 Congressional App Challenge (CA-17).
+Built by Jingyu (Jingjing) Lei, Archbishop Mitty High School.
 
 ---
 
